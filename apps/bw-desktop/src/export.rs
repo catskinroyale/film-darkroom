@@ -5,6 +5,7 @@
 //! `{ei}`, `{date}` (YYYY-MM-DD), `{time}` (HHMMSS) and `{n}` (sequence number,
 //! zero-padded to the chosen number of digits).
 
+use std::borrow::Cow;
 use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
@@ -119,10 +120,26 @@ impl Default for ExportSettings {
     }
 }
 
+/// What `{style}` names: the saved style, or, once its settings have been changed, the
+/// film, developer and EI actually used (the saved name would describe another process).
+pub fn style_label<'a>(
+    name: &'a str,
+    modified: bool,
+    film: &str,
+    developer: &str,
+    ei: f64,
+) -> Cow<'a, str> {
+    if modified {
+        Cow::Owned(format!("{film} {developer} EI{ei:.0}"))
+    } else {
+        Cow::Borrowed(name)
+    }
+}
+
 /// Values the template tokens expand to for one export.
 pub struct NameContext<'a> {
     pub source: &'a Path,
-    pub style: &'a str,
+    pub style: Cow<'a, str>,
     pub film: &'a str,
     pub developer: &'a str,
     pub ei: f64,
@@ -132,7 +149,10 @@ pub struct NameContext<'a> {
 
 pub const TOKENS: [(&str, &str); 8] = [
     ("{name}", "Original file name without its extension"),
-    ("{style}", "Style name"),
+    (
+        "{style}",
+        "Style name; for an edited style, its film, developer and EI instead",
+    ),
     ("{film}", "Film"),
     ("{developer}", "Developer and dilution"),
     ("{ei}", "Exposure index the film was developed for"),
@@ -221,7 +241,7 @@ impl ExportSettings {
         let name = self
             .template
             .replace("{name}", &stem)
-            .replace("{style}", &slug(ctx.style))
+            .replace("{style}", &slug(&ctx.style))
             .replace("{film}", &slug(ctx.film))
             .replace("{developer}", &slug(ctx.developer))
             .replace("{ei}", &format!("{:.0}", ctx.ei))
@@ -277,12 +297,29 @@ mod tests {
     fn ctx(source: &Path) -> NameContext<'_> {
         NameContext {
             source,
-            style: "Tri-X · D-76",
+            style: "Tri-X · D-76".into(),
             film: "Tri-X-like 400",
             developer: "D-76 Stock",
             ei: 1600.0,
             unix_time: 1_792_454_400, // 2026-10-20 00:00:00 UTC
         }
+    }
+
+    #[test]
+    fn edited_style_is_named_by_its_settings() {
+        let s = ExportSettings {
+            template: "{name}__{style}".into(),
+            format: Format::Jpeg,
+            ..Default::default()
+        };
+        let src = PathBuf::from("/p/DSC_0040.NEF");
+        let mut c = ctx(&src);
+        assert_eq!(s.file_name(&c), "DSC_0040__tri-x-d-76.jpg");
+        c.style = style_label("Tri-X · D-76", true, "HP5-like Plus", "HC-110 B", 1600.0);
+        assert_eq!(
+            s.file_name(&c),
+            "DSC_0040__hp5-like-plus-hc-110-b-ei1600.jpg"
+        );
     }
 
     #[test]

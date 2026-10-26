@@ -1088,15 +1088,23 @@ impl App {
 
     /// Values for the file-name template, for the current image and style.
     fn name_context<'a>(&'a self, source: &'a std::path::Path) -> NameContext<'a> {
+        let film = self
+            .summary
+            .as_ref()
+            .map_or(&self.draft.film, |m| &m.film_name);
+        let ei = self.draft.exposure_index;
         NameContext {
             source,
-            style: &self.draft.name,
-            film: self
-                .summary
-                .as_ref()
-                .map_or(&self.draft.film, |m| &m.film_name),
+            style: crate::export::style_label(
+                &self.draft.name,
+                self.is_modified(),
+                film,
+                &self.developer_label,
+                ei,
+            ),
+            film,
             developer: &self.developer_label,
-            ei: self.draft.exposure_index,
+            ei,
             unix_time: std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .map_or(0, |d| d.as_secs()),
@@ -1264,7 +1272,7 @@ impl App {
 
                 let name = e.file_name(&NameContext {
                     source: &path,
-                    style: &style,
+                    style: style.as_str().into(),
                     film: &film,
                     developer: &developer,
                     ei,

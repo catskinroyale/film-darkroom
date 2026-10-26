@@ -5,6 +5,11 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- **Export file names follow your changes.** After you change a style's film, developer
+  or push, `{style}` in the file name gives the film, developer and EI actually used
+  instead of the saved style's name.
+
 ## [0.11.0] - 2026-10-26
 
 ### Changed
