@@ -29,8 +29,9 @@ mod help {
     pub const TIME: &str = "Development time. 'Published' follows the time table for this film, developer and EI;\nuntick it to set your own. Longer development raises contrast and grain.";
     pub const TEMP: &str = "Developer temperature. Warmer developer works faster: more density and contrast for the same time.";
     pub const AGITATION: &str = "How often the tank is agitated. Less agitation gives stronger edge effects and compresses highlights.";
-    pub const GRADE: &str =
-        "Contrast of the printing paper: 0 is very soft, 2 is normal, 5 is very hard.";
+    pub const GRADE: &str = "Contrast filter on variable-contrast paper: −1 is softest, 2 is normal, 5 is Kodak's 5+.\nThe curves are Kodak's published ones for each filter; half grades blend the two either side.";
+    pub const PAPER: &str = "The printing paper. Its curve for each contrast filter comes from the manufacturer's datasheet.\nGlossy paper has deeper blacks (density about 2.1) than matte (about 1.7). ISO R is the paper's exposure range\nat the chosen grade (higher is softer: R140 is very soft, R100 normal, R50 hard).";
+    pub const PREFLASH: &str = "A brief, even exposure of the paper before the print, as a percentage of the exposure that just starts to grey it.\nIt brings detail into bright highlights (skies, white walls) and darkens mid-tones a little (about 0.15 density at 100%); shadows don't change.";
     pub const PRINT_EXPOSURE: &str = "Enlarger exposure relative to automatic. More exposure makes the print darker; less makes it lighter.";
     pub const CURVE: &str = "The negative's density against log exposure (lux·s). Steeper means more contrast.\nOrange line: the metered mid-grey.";
 }
@@ -664,18 +665,47 @@ pub fn grain_section(ui: &mut egui::Ui, s: &mut Style, summary: Option<&ModelSum
 
 /// Print: paper grade and enlarger exposure.
 pub fn print_section(ui: &mut egui::Ui, s: &mut Style) {
+    let papers = bw_profiles::papers();
+    let current = papers
+        .iter()
+        .find(|(id, _)| *id == s.print.paper)
+        .unwrap_or(&papers[0])
+        .1;
+    let mut chosen = None;
+    widgets::dropdown(ui, "paper", "Paper", current, help::PAPER, |ui| {
+        for (id, name) in &papers {
+            let selected = bw_profiles::paper_readout(&s.print.paper, 2.0).name == *name;
+            if ui.add(egui::Button::selectable(selected, *name)).clicked() {
+                chosen = Some(*id);
+            }
+        }
+    });
+    if let Some(id) = chosen {
+        s.print.paper = id.to_string();
+    }
+    let paper = bw_profiles::paper_readout(&s.print.paper, s.print.grade);
+    let (lo, hi) = paper.grade_range;
     widgets::slider(
         ui,
         &spec(
             "print.grade",
             "Paper grade",
             help::GRADE,
-            (0.0, 5.0, 2.0, 0.5),
+            (lo, hi, 2.0, 0.5),
             1,
             "",
         ),
         &mut s.print.grade,
         true,
+    );
+    widgets::note(
+        ui,
+        format!(
+            "ISO R{:.0} at this grade · {}",
+            paper.iso_range,
+            paper.level.label()
+        ),
+        help::PAPER,
     );
     let exposure = SliderSpec {
         signed: true,
@@ -689,6 +719,18 @@ pub fn print_section(ui: &mut egui::Ui, s: &mut Style) {
         )
     };
     widgets::slider(ui, &exposure, &mut s.print.exposure_stops, true);
+    let mut flash = s.print.preflash * 100.0;
+    let preflash = spec(
+        "print.preflash",
+        "Preflash",
+        help::PREFLASH,
+        (0.0, 100.0, 0.0, 5.0),
+        0,
+        "%",
+    );
+    if widgets::slider(ui, &preflash, &mut flash, true) {
+        s.print.preflash = flash / 100.0;
+    }
 }
 fn model_panel(ui: &mut egui::Ui, summary: Option<&ModelSummary>) {
     let Some(summary) = summary else {

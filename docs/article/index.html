@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Developing Film in Software</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600;700&family=JetBrains+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap">
+<style>
+/* Layout: one reading column of ~66ch; figures break out wider, captioned like a datasheet plate. */
+:root {
+  --paper: #f2f3f1;      /* fibre-base white with a cool cast */
+  --ink: #151719;
+  --muted: #5a5f63;
+  --rule: #d3d6d4;
+  --plate: #e6e8e6;      /* figure ground */
+  --accent: #a8481a;     /* safelight amber */
+  --display: "Archivo Narrow", "Arial Narrow", "Helvetica Neue", sans-serif;
+  --body: "Newsreader", Georgia, "Times New Roman", serif;
+  --data: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #111213; --ink: #e6e7e4; --muted: #9a9fa2; --rule: #2a2d2f; --plate: #1a1c1d; --accent: #e08a52;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #111213; --ink: #e6e7e4; --muted: #9a9fa2; --rule: #2a2d2f; --plate: #1a1c1d; --accent: #e08a52;
+  color-scheme: dark;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 1.1875rem;
+  line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 5rem;
+  overflow-x: clip;
+}
+article { max-width: 66ch; margin: 0 auto; }
+p, ul, table { margin: 0 0 1.15em; }
+ul { padding-left: 1.2em; }
+li { margin-bottom: .35em; }
+strong { font-weight: 500; }
+a { color: var(--accent); text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Masthead */
+header.mast { padding-block: 4.5rem 2.5rem; border-bottom: 1px solid var(--rule); margin-bottom: 2.5rem; }
+.kicker {
+  font-family: var(--data); font-size: .72rem; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--accent); margin: 0 0 1.4rem;
+}
+h1 {
+  font-family: var(--display); font-weight: 700; font-size: clamp(2.6rem, 7vw, 4.4rem);
+  line-height: .98; letter-spacing: -.01em; margin: 0 0 1.4rem; text-wrap: balance;
+}
+.standfirst { font-size: 1.35rem; line-height: 1.45; color: var(--muted); margin: 0 0 1.8rem; text-wrap: pretty; }
+.strip {
+  display: flex; flex-wrap: wrap; gap: .4rem 1.4rem;
+  font-family: var(--data); font-size: .75rem; color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.strip span::before { content: "▸ "; color: var(--accent); }
+
+h2 {
+  font-family: var(--display); font-weight: 600; font-size: 1.85rem; line-height: 1.1;
+  margin: 3.2rem 0 1rem; text-wrap: balance;
+}
+
+/* Figures: wider than the text column where the screen allows. */
+figure {
+  margin: 2.2rem 0 2.6rem;
+  width: min(100vw - 32px, 1100px);
+  max-width: none;
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+}
+figure img {
+  display: block; width: 100%; height: auto; max-width: 100%;
+  border: 1px solid var(--rule); background: var(--plate);
+}
+figure.narrow { width: min(100vw - 32px, 560px); }
+figcaption {
+  max-width: 66ch; margin: .8rem auto 0; font-size: .95rem; line-height: 1.5; color: var(--muted);
+  display: grid; grid-template-columns: auto 1fr; gap: .2rem 1rem;
+}
+.fig-no {
+  font-family: var(--data); font-size: .7rem; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--accent); padding-top: .25rem; white-space: nowrap;
+}
+.fig-data { grid-column: 2; font-family: var(--data); font-size: .72rem; color: var(--muted); }
+
+/* Placeholder for images still to be made. */
+.placeholder {
+  border: 1.5px dashed var(--muted); background: var(--plate);
+  aspect-ratio: 16 / 7; max-width: 100%;
+  display: grid; place-content: center; text-align: center; gap: .5rem; padding: 1.5rem;
+}
+.placeholder b {
+  font-family: var(--data); font-weight: 500; font-size: .75rem; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--accent);
+}
+.placeholder span { font-size: 1rem; color: var(--muted); max-width: 46ch; }
+
+/* Calibration levels table */
+.table-wrap { overflow-x: auto; margin: 1.6rem 0 1.4rem; }
+table { border-collapse: collapse; width: 100%; font-size: .98rem; min-width: 30rem; }
+th, td { text-align: left; vertical-align: top; padding: .6rem .8rem .6rem 0; border-top: 1px solid var(--rule); }
+th { font-family: var(--data); font-weight: 500; font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); border-top: 0; }
+td:first-child { font-family: var(--display); font-weight: 600; white-space: nowrap; }
+
+.author-note {
+  border-left: 2px solid var(--accent); padding: .2rem 0 .2rem 1rem; color: var(--muted); font-style: italic;
+}
+.end { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1.4rem; }
+.end code { font-family: var(--data); font-size: .9em; }
+
+@media (max-width: 520px) {
+  body { font-size: 1.0625rem; }
+  header.mast { padding-block: 2.5rem 2rem; }
+  .standfirst { font-size: 1.15rem; }
+  figcaption { grid-template-columns: 1fr; }
+  .fig-data { grid-column: 1; }
+  .placeholder { aspect-ratio: auto; min-height: 12rem; }
+}
+</style>
+</head>
+<body>
+
+
+<article>
+  <header class="mast">
+    <p class="kicker">BW Darkroom · open source · macOS</p>
+    <h1>Developing film in software</h1>
+    <p class="standfirst">A black-and-white editor that models the film, the developer and the paper as separate stages, and takes its numbers from the manufacturers' datasheets.</p>
+    <div class="strip" aria-label="Example process">
+      <span>Tri-X 400</span><span>D-76 stock · 6.75 min · 20 °C</span><span>Agitate every 30 s</span><span>Glossy paper · grade 2</span>
+    </div>
+  </header>
+
+  <p>Most black-and-white conversions start and finish with a tone curve. You pick a preset named after a film, and you get a curve somebody liked plus some noise. That gives you a look. It doesn't tell you what would have happened if you'd shot Tri-X, developed it two stops long in HC-110 and printed it on a hard grade.</p>
+  <p>BW Darkroom is my attempt to answer that question. It's a macOS app, written in Rust, that takes a raw file through the same chain a darkroom would. The film is exposed, the developer builds density over time, and the negative is enlarged onto paper. Each stage is a separate model with its own controls, and wherever I can, the numbers come from the people who made the materials.</p>
+
+  <figure>
+    <img src="images/interface-dark.jpg" width="1480" height="940" alt="BW Darkroom showing a black-and-white rendering of a stone church doorway, with a folder tree, style previews and the Develop panel">
+    <figcaption><span class="fig-no">Fig. 1</span><span>BW Darkroom with one raw file open: folders on the left, style previews next to them, the image in the middle and the Develop panel on the right.</span><span class="fig-data">Tri-X · D-76 · 6.75 min · 20 °C · paper grade 2</span></figcaption>
+  </figure>
+
+  <h2>What it is</h2>
+  <ul>
+    <li>A desktop app for Apple silicon Macs, free and open source (Apache-2.0).</li>
+    <li>It opens raw files from most cameras, plus TIFF, PNG and JPEG.</li>
+    <li>It exports 16-bit TIFF or PNG, or JPEG. A small recipe file can be saved next to each export so you can see later exactly how it was made.</li>
+    <li>Your photos never leave your machine. Every render happens locally; the only network access is the update check.</li>
+  </ul>
+
+  <h2>Film, developer, paper: three stages, not one curve</h2>
+  <p>In a real darkroom you make three separate decisions: which film to load, how to develop it and what to print it on. Each one changes the picture in its own way. BW Darkroom keeps them apart.</p>
+  <p><strong>Film.</strong> You choose a stock (Tri-X, HP5 Plus, T-Max, the Delta range, FP4 Plus, Double-X, Kentmere) and a format, from 35&nbsp;mm to 8×10. Format matters because a small negative is enlarged more, so its grain shows more in the print.</p>
+  <p><strong>Development.</strong> You choose the developer and dilution, then push or pull. The time comes from a published table (the Massive Dev Chart), or you can enter your own. Temperature and agitation are settings too, from continuous agitation through to stand development. Dilute developers and stand development produce edge effects, and the model includes those.</p>
+  <p><strong>Print.</strong> You choose the paper, the grade, the print exposure and, new in this version, preflash.</p>
+
+  <figure>
+    <img src="images/film-and-development.jpg" width="1480" height="940" alt="The Film and Development sections of the Develop panel, showing film stock, format, developer, dilution, push and pull, and development details">
+    <figcaption><span class="fig-no">Fig. 2</span><span>The Film and Development sections. Push and pull pick the published time for that film, developer and speed. Development details opens temperature, agitation and your own time.</span></figcaption>
+  </figure>
+
+  <h2>Starting from the datasheet</h2>
+  <p>Earlier versions used illustrative film parameters: sensible-looking curves, clearly labelled as such. That was never the goal. Kodak and Ilford publish characteristic curves for their films, plotting density against exposure for several development times. Those curves are the best data there is, and the app now uses them.</p>
+  <p><strong>Reading the curves exactly.</strong> Kodak's datasheets are PDFs, and their curves are drawn as vector paths. Instead of tracing a picture by eye, I read the exact coordinates the plot was drawn with. I then checked every extraction by drawing it back over the original page.</p>
+  <p><strong>Fitting a development model.</strong> A film's curve isn't fixed. As development goes on, density builds towards a limit, the curve gets steeper, and the toe moves: the film gains some real shadow speed. The model fits all the published development times at once. For Tri-X in D-76, Kodak's four curves (6 to 12 minutes) fit with an average error under 0.03 density. T-Max 400 comes out at a measured speed of ISO 391 against its box speed of 400. Neither check was used in the fit.</p>
+  <p><strong>Other developers.</strong> Kodak also publishes contrast-index charts for HC-110 and diluted D-76. From those I fitted how much faster or slower each developer works than D-76. I then checked the result against Kodak's own time tables, which weren't used: for Tri-X in HC-110 dilution B the fit says 1.75× as fast and the tables imply 1.80×.</p>
+  <p><strong>Ilford.</strong> Ilford publishes less: one curve per film, on a relative exposure scale, and mostly as pictures rather than vector drawings. I wrote a tracer for those and checked each trace against the page. Delta 3200 has a full family of curves, so it gets its own fit. HP5 Plus, FP4 Plus, Delta 100 and Delta 400 keep Ilford's curve shape and borrow how contrast grows from the closest Kodak film. They are then placed so the film reaches its rated ISO. As a check, the time at which each film reaches standard contrast lands within about a minute of Ilford's recommended time.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Level</th><th>What it means</th><th>Films</th></tr></thead>
+      <tbody>
+        <tr><td>2 · fitted</td><td>Fitted to the manufacturer's full family of curves</td><td>Tri-X, T-Max 100 and T-Max 400 in D-76; HC-110 B and D-76 1+1 rates for Tri-X and T-Max 400</td></tr>
+        <tr><td>1 · approximation</td><td>One published curve, with growth borrowed from a fitted film</td><td>HP5 Plus, FP4 Plus, Delta 100, Delta 400; Delta 3200 from its own family</td></tr>
+        <tr><td>Illustrative</td><td>No published curves to fit</td><td>Kentmere, Double-X and the remaining developers</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <figure>
+    <div class="placeholder" role="img" aria-label="Placeholder for a chart of Kodak's Tri-X curves with the fitted model">
+      <b>Image to come</b>
+      <span>Kodak's published Tri-X curves in D-76 (6, 8, 10 and 12 min) with the fitted model drawn over them. Density against log exposure, one colour per development time.</span>
+    </div>
+    <figcaption><span class="fig-no">Fig. 3</span><span>The fit: Kodak's curves against the model.</span></figcaption>
+  </figure>
+
+  <h2>Pushing film</h2>
+  <p>Press <strong>Push 2</strong> on Tri-X and the app picks the published time for EI 1600: 9.5 minutes in D-76 instead of 6.75. Push and pull change development only. The exposure stays as you shot it, so to simulate actually underexposing the film, set exposure compensation to −2 EV as well.</p>
+  <p>Development moves the whole curve, not just its slope. In Kodak's data a two-stop push gains about one stop of real shadow speed, and contrast climbs.</p>
+  <p>The print has to follow. A darkroom printer exposes a pushed negative for its shadows, so the app does the same: the darkest tone with detail (zone I) prints at the density it would get from normal development. The pushed print keeps its shadows, while mid-tones and highlights brighten and harden.</p>
+
+  <figure>
+    <img src="images/push-two-stops.jpg" width="1480" height="940" alt="Tri-X pushed two stops, with the detail window showing a brighter, grainier stone wall at 100 percent">
+    <figcaption><span class="fig-no">Fig. 4</span><span>Tri-X pushed two stops. The detail window shows the stone at 100%: brighter mid-tones, harder highlights and stronger grain.</span><span class="fig-data">Tri-X · EI 1600 · D-76 · 9.5 min · 20 °C</span></figcaption>
+  </figure>
+
+  <h2>Grain</h2>
+  <p>Grain strength comes from each film's published granularity, then scales with the format and the enlargement. You can adjust size, amount and roughness; by default they follow the film.</p>
+  <p>Grain is tied to the pixel's position in the full frame. A 100% crop in the detail window therefore shows exactly the grain you'll get in the export, not a preview approximation.</p>
+
+  <figure>
+    <img src="images/grain-detail.jpg" width="1480" height="940" alt="The Grain section with size, amount and roughness sliders, and a 200 percent detail window over the wooden door">
+    <figcaption><span class="fig-no">Fig. 5</span><span>The Grain section, with the detail window at 200% on the door. The orange square on the image marks the area being inspected.</span><span class="fig-data">35 mm · 1.0× enlargement · grain at print: moderate</span></figcaption>
+  </figure>
+
+  <h2>The paper</h2>
+  <p>The paper is measured too. Kodak published full curve families for its variable-contrast papers, and two of them are built in:</p>
+  <ul>
+    <li><strong>Polymax II-like, glossy</strong>: grades −1 to 5+, with blacks around 2.1.</li>
+    <li><strong>Polycontrast IV-like, matte</strong>: Kodak publishes filters 1, 3 and 5+. Blacks are around 1.7, flatter and softer.</li>
+  </ul>
+  <p>Grades between the published filters are blended. The panel shows the paper's ISO range at the chosen grade (R119 at grade 2 on the glossy paper), as a printer would read it off the box. Both papers are discontinued, so they're named "-like": emulations built from Kodak's published data.</p>
+  <p><strong>Preflash</strong> is a brief, even exposure given to the paper before the image. It lifts the lightest highlights the most (at 100%, from 0.08 to 0.28 density), darkens mid-tones a little and leaves the shadows alone. It's a classic way to hold detail in bright highlights without flattening the rest of the print.</p>
+
+  <figure>
+    <img src="images/print-paper.jpg" width="1480" height="940" alt="The Print section with paper choice, paper grade, print exposure and preflash sliders">
+    <figcaption><span class="fig-no">Fig. 6</span><span>The Print section: paper, grade, print exposure and preflash. The note under the grade gives the paper's ISO range and how the paper was calibrated.</span><span class="fig-data">Polymax II-like, glossy · grade 2.0 · ISO R119 · preflash 0%</span></figcaption>
+  </figure>
+
+  <h2>Seeing what changed</h2>
+  <p>A toolbar under the image switches between the treated image, the original, and the two side by side. A magnifier opens a detail window at 100% or 200%, and in side-by-side mode it shows the original and the treated crop next to each other. A book icon shows the file name and camera settings.</p>
+
+  <figure>
+    <img src="images/compare-side-by-side.jpg" width="1480" height="940" alt="The colour original and the black-and-white treatment shown side by side">
+    <figcaption><span class="fig-no">Fig. 7</span><span>Original and treated side by side.</span></figcaption>
+  </figure>
+
+  <figure>
+    <img src="images/detail-original-vs-treated.jpg" width="1044" height="600" alt="A 100 percent crop of a wooden door with a keyhole, colour original on the left and grainy black-and-white on the right">
+    <figcaption><span class="fig-no">Fig. 8</span><span>The detail window in side-by-side mode at 100%: the camera's colour file next to the Tri-X print, grain included.</span></figcaption>
+  </figure>
+
+  <h2>Styles</h2>
+  <p>A style is a complete recipe: film, developer, process, print and grain. The app comes with 21 film-and-process styles (Tri-X in D-76, HC-110 and Rodinal; HP5 pushed in HC-110; Delta 3200; hard and soft prints; Rodinal stand) and five styles inspired by photographers: Don McCullin, Ansel Adams, Bill Brandt, Josef Koudelka and Edward Weston. Those five are documented interpretations of published accounts of how they worked, not claims about their actual recipes.</p>
+  <p>Every style renders a preview of the current image in a column next to the folders, so you can choose by looking. You can save your own styles and import other people's.</p>
+
+  <figure>
+    <img src="images/styles-list.jpg" width="1480" height="940" alt="The Styles panel listing 21 film and process styles and five photographer-inspired styles">
+    <figcaption><span class="fig-no">Fig. 9</span><span>The Styles panel. Previews of the current photo run down the left; the full list is on the right.</span></figcaption>
+  </figure>
+
+  <h2>Browsing</h2>
+  <p>The left side works like a familiar photo library: a collapsible folder tree, then a strip of the images in the current folder. Application bundles and other packages are skipped, and portrait images are shown the right way up from their EXIF orientation. The app follows the system light or dark theme, or you can set it yourself.</p>
+
+  <figure>
+    <img src="images/interface-light.jpg" width="1480" height="940" alt="BW Darkroom in the light theme">
+    <figcaption><span class="fig-no">Fig. 10</span><span>The light theme.</span></figcaption>
+  </figure>
+
+  <h2>What it doesn't do yet</h2>
+  <ul>
+    <li><strong>A "digital look".</strong> Some people want a black-and-white image that uses the screen's full range, not paper's. That would be a separate, deliberately non-physical output. It's planned but not scheduled, because the film, chemistry and paper models come first.</li>
+    <li><strong>Split-grade printing.</strong> That would need data on how each layer of the paper responds to each filter, and the datasheets don't give it.</li>
+    <li><strong>Every film.</strong> Kentmere and Double-X publish no curves, so they stay illustrative.</li>
+    <li><strong>Other platforms.</strong> It's macOS on Apple silicon only for now.</li>
+  </ul>
+  <p>Everything here comes from published curves. It's an emulation of the datasheet, not a measurement of a particular roll in a particular tank.</p>
+
+  <figure>
+    <div class="placeholder" role="img" aria-label="Placeholder for a real darkroom print compared with the app's rendering">
+      <b>Image to come · optional</b>
+      <span>A real darkroom print of a negative next to BW Darkroom's rendering of the same scene, with the same film, developer and paper.</span>
+    </div>
+    <figcaption><span class="fig-no">Fig. 11</span><span>Wet print and simulation, side by side.</span></figcaption>
+  </figure>
+
+  <h2>How it's built</h2>
+  <p>The engine is a set of Rust crates: exposure and development, the negative (adjacency and grain), printing, and the styles, with raw decoding from LightCraft's open-source decoder. The interface is built with egui. A handful of Python tools read the datasheet curves, fit the models and check the results. Kodak's and Ilford's data stays theirs and is credited in the repository.</p>
+  <p class="author-note">Author note (optional): a paragraph in your own voice about why you started this, your own darkroom background and what you shoot.</p>
+
+  <div class="end">
+    <h2>Try it</h2>
+    <p>BW Darkroom is on GitHub at <a href="https://github.com/catskinroyale/bnw-darkroom">github.com/catskinroyale/bnw-darkroom</a>. The Releases page has a disk image for Apple silicon Macs. Issues and ideas are welcome there, especially from anyone with real sensitometry data for the films that are still illustrative.</p>
+  </div>
+</article>
+
+</body>
+</html>

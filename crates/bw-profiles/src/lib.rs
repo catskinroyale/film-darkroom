@@ -98,10 +98,16 @@ pub struct DevelopmentSpec {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct PrintSpec {
-    /// Paper grade 0–5.
+    /// Paper id (`bw_darkroom::Paper::id`); empty or unknown means the default paper.
+    #[serde(default)]
+    pub paper: String,
+    /// Variable-contrast filter grade, −1 (softest) to 5 (Kodak's 5+).
     pub grade: f64,
     /// Extra enlarger exposure in stops relative to the auto mid-grey exposure.
     pub exposure_stops: f64,
+    /// Preflash as a fraction of the paper's threshold exposure (0 = none).
+    #[serde(default)]
+    pub preflash: f64,
 }
 
 /// A complete film → developer → print recipe.
@@ -226,14 +232,22 @@ impl Style {
         }
     }
 
-    /// Print settings. The enlarger exposure holds the black point that normal
-    /// development of this film and developer gives with mid-grey printed at the default
-    /// density, so a normally developed negative prints exactly as with mid-grey
-    /// anchoring, and longer or shorter development opens or closes the tones from there:
-    /// blacks hold, shadows open slightly and highlights brighten with a push.
+    /// Print settings. The printer prints for the shadows: the enlarger exposure puts the
+    /// scene's zone I (four stops under mid-grey, the darkest tone with detail) at the
+    /// print density normal development of this film and developer gives it with mid-grey
+    /// printed at the default density. A normally developed negative therefore prints
+    /// exactly as with mid-grey anchoring, and longer or shorter development changes the
+    /// tones above the shadows: with a push the shadows hold while the mid-tones and
+    /// highlights brighten (more contrast); with a pull they darken.
+    ///
+    /// (Earlier versions held clear film, the "black point". With fitted films a push puts
+    /// so much density, and real speed, into the negative that prints held that way came
+    /// out about 1½ stops too light; decision P3.)
     pub fn print_settings(&self) -> PrintSettings {
         let mut settings = PrintSettings {
+            paper: bw_darkroom::Paper::from_id(&self.print.paper),
             grade: self.print.grade,
+            preflash: self.print.preflash,
             exposure_adjust_stops: self.print.exposure_stops,
             ..Default::default()
         };
@@ -246,10 +260,19 @@ impl Style {
                 time_min: normal_time,
                 ..self.processing()
             });
-            let grey_above_base = calibration.net_density(self.grey_log_h(), &normal) - normal.fog;
+            let actual = calibration.resolve(&self.processing());
+            let above_fog = |log_h: f64, state: &bw_developer::DevelopmentState| {
+                calibration.net_density(log_h, state) - state.fog
+            };
+            let zone_i = self.grey_log_h() - 4.0 * std::f64::consts::LOG10_2;
+            // Exposure from clear film that prints mid-grey at the default density under
+            // normal development, moved by the change in zone I's density from it.
+            let grey_normal = above_fog(self.grey_log_h(), &normal);
+            let zone_i_change = above_fog(zone_i, &actual) - above_fog(zone_i, &normal);
             settings.exposure = PrintExposure::BaseAt {
                 print_density: settings.density_at(
-                    settings.log_exposure_for(print_density) + settings.callier_q * grey_above_base,
+                    settings.log_exposure_for(print_density)
+                        + settings.callier_q * (grey_normal + zone_i_change),
                 ),
             };
         }
@@ -295,7 +318,7 @@ impl Style {
     fn combination(
         &self,
     ) -> Result<(bw_film::FilmStock, bw_developer::DevelopmentCalibration), StyleError> {
-        illustrative::combination(&self.film, &self.developer).ok_or_else(|| {
+        bw_negative::combination(&self.film, &self.developer).ok_or_else(|| {
             StyleError::UnknownCombination {
                 film: self.film.clone(),
                 developer: self.developer.clone(),
@@ -462,6 +485,32 @@ pub fn developer_ids() -> &'static [&'static str] {
     &illustrative::DEVELOPERS
 }
 
+/// The printing paper at a filter grade: its name, calibration level and ISO 6846 range.
+pub struct PaperReadout {
+    pub name: &'static str,
+    pub level: CalibrationLevel,
+    pub iso_range: f64,
+    pub grade_range: (f64, f64),
+}
+
+/// Papers to choose from: id and display name.
+pub fn papers() -> Vec<(&'static str, &'static str)> {
+    bw_darkroom::Paper::ALL
+        .into_iter()
+        .map(|p| (p.id(), bw_darkroom::PaperFamily::get(p).name))
+        .collect()
+}
+
+pub fn paper_readout(paper: &str, grade: f64) -> PaperReadout {
+    let family = bw_darkroom::PaperFamily::get(bw_darkroom::Paper::from_id(paper));
+    PaperReadout {
+        name: family.name,
+        level: family.provenance.level,
+        iso_range: family.curve(grade).iso_range(),
+        grade_range: family.grade_range(),
+    }
+}
+
 pub fn film_label(id: &str) -> String {
     illustrative::film(id).map_or_else(|| id.to_string(), |f| f.name)
 }
@@ -517,8 +566,10 @@ pub fn photographer_presets() -> Vec<Preset> {
                 agitation,
             },
             print: PrintSpec {
+                paper: String::new(),
                 grade,
                 exposure_stops: print_stops,
+                preflash: 0.0,
             },
             seed: 1,
             format_mm,
@@ -653,8 +704,10 @@ pub fn builtin_styles() -> Vec<Style> {
             ev_compensation: 0.0,
             development: normal(None),
             print: PrintSpec {
+                paper: String::new(),
                 grade,
                 exposure_stops: 0.0,
+                preflash: 0.0,
             },
             seed: 1,
             format_mm: 36.0,

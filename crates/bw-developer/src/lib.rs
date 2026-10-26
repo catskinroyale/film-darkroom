@@ -3,10 +3,14 @@
 //! The development-growth model:
 //!
 //! ```text
-//! D_net(h, τ) = D_f(τ) + D∞(h) · (1 − exp(−τ / τc(h)))
+//! D_net(h, τ) = D_f(τ) + D∞(h') · (1 − exp(−τ / τc(h')))
+//! h'          = h + s · ln(τ / τ_ref)
 //! τc(h)       = τc0 · (1 + κ · D∞(h))
 //! τ           = t · exp(α (T − 20 °C)) · r_A(agitation)
 //! ```
+//!
+//! `s` is the speed gain with development (design 0002): longer development moves the
+//! curve to lower exposure, as every published Tri-X family shows in its toe.
 
 use bw_core::{MonotoneCurve, Provenance};
 
@@ -66,6 +70,29 @@ pub struct GrainModifier {
     pub tau_ref_min: f64,
 }
 
+/// Speed gain with development (design 0002): the curve moves to lower exposure by
+/// `shift_log_h` per unit of `ln(τ / τ_ref)`. Zero for calibrations without a fitted
+/// curve family.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct SpeedGain {
+    pub shift_log_h: f64,
+    /// Effective development (reference-condition minutes) at which the shift is zero.
+    pub tau_ref_min: f64,
+}
+
+impl SpeedGain {
+    pub const NONE: SpeedGain = SpeedGain {
+        shift_log_h: 0.0,
+        tau_ref_min: 1.0,
+    };
+
+    /// Log-exposure shift at effective development `tau_min`. Very short development is
+    /// clamped to a tenth of the reference, below any published time.
+    pub fn shift_at(&self, tau_min: f64) -> f64 {
+        self.shift_log_h * (tau_min.max(0.1 * self.tau_ref_min) / self.tau_ref_min).ln()
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct SupportedRange {
     pub time_min: (f64, f64),
@@ -82,6 +109,7 @@ pub struct DevelopmentCalibration {
     /// Asymptotic net density vs log10 exposure (lux·s).
     pub d_inf: MonotoneCurve,
     pub tau_c0_min: f64,
+    pub speed: SpeedGain,
     pub reference_agitation: Agitation,
     pub alpha_per_c: f64,
     /// d r_A / d(agitation index).
@@ -100,6 +128,8 @@ pub struct DevelopmentCalibration {
 pub struct DevelopmentState {
     /// Effective development in reference-condition minutes.
     pub tau_min: f64,
+    /// Log-exposure shift from the speed gain at this development.
+    pub speed_shift_log_h: f64,
     pub kappa: f64,
     pub adjacency_strength: f64,
     pub adjacency_length_um: f64,
@@ -119,6 +149,7 @@ impl DevelopmentCalibration {
         let deficit = ((a_ref - a) / a_ref.max(1e-6)).clamp(0.0, 1.0);
         DevelopmentState {
             tau_min: tau,
+            speed_shift_log_h: self.speed.shift_at(tau),
             kappa: self.kappa_stand * deficit,
             adjacency_strength: (self.adjacency.strength_ref * (1.0 + 1.5 * (a_ref - a))).max(0.0),
             adjacency_length_um: self.adjacency.length_um,
@@ -130,7 +161,7 @@ impl DevelopmentCalibration {
 
     /// Net density above base (including fog) at log exposure `h`.
     pub fn net_density(&self, h: f64, s: &DevelopmentState) -> f64 {
-        let d_inf = self.d_inf.eval(h).max(0.0);
+        let d_inf = self.d_inf.eval(h + s.speed_shift_log_h).max(0.0);
         let tau_c = self.tau_c0_min * (1.0 + s.kappa * d_inf);
         s.fog + d_inf * (1.0 - (-s.tau_min / tau_c).exp())
     }
@@ -168,6 +199,7 @@ mod tests {
             d_inf: MonotoneCurve::new(&[(-3.5, 0.0), (-2.5, 0.2), (-1.0, 1.4), (0.5, 2.6)])
                 .unwrap(),
             tau_c0_min: 6.0,
+            speed: SpeedGain::NONE,
             reference_agitation: Agitation::Intermittent { interval_s: 30.0 },
             alpha_per_c: 0.09,
             agitation_rate_slope: 0.25,

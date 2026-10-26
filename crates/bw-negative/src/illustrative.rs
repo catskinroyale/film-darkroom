@@ -13,7 +13,8 @@
 
 use bw_core::{MonotoneCurve, Provenance};
 use bw_developer::{
-    AdjacencyParams, Agitation, DevelopmentCalibration, FogModel, GrainModifier, SupportedRange,
+    AdjacencyParams, Agitation, DevelopmentCalibration, FogModel, GrainModifier, SpeedGain,
+    SupportedRange,
 };
 use bw_film::{FilmStock, GrainParams, SpectralWeights};
 
@@ -215,6 +216,7 @@ pub fn combination(
         dilution: dilution.into(),
         d_inf,
         tau_c0_min,
+        speed: SpeedGain::NONE,
         reference_agitation: Agitation::Intermittent { interval_s: 30.0 },
         alpha_per_c: d.alpha_per_c,
         agitation_rate_slope: 0.25,

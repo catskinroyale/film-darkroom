@@ -45,11 +45,16 @@ fn push_holds_blacks_opens_shadows_and_brightens_highlights() {
     let normal = print_densities("hp5", "hc110-b", 0.0);
     for push in [1.0, 2.0] {
         let pushed = print_densities("hp5", "hc110-b", push);
+        // Push development gains some real shadow speed (design 0002), so even zone 0
+        // gains a little density while clear film still prints black; it moves much less
+        // than the shadows above it.
         assert!(
-            (pushed[0] - normal[0]).abs() < 0.03,
-            "+{push}: blacks {:.2} → {:.2}",
+            (pushed[0] - normal[0]).abs() < 0.5 * (pushed[3] - normal[3]).abs(),
+            "+{push}: blacks {:.2} → {:.2}, zone III {:.2} → {:.2}",
             normal[0],
-            pushed[0]
+            pushed[0],
+            normal[3],
+            pushed[3]
         );
         assert!(
             pushed[3] < normal[3] - 0.05,

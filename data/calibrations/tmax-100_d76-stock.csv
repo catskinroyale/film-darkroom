@@ -1,0 +1,34 @@
+# Development calibration fitted by tools/fit_development.py (design 0002).
+# D = base_density + fog_f1_per_min * tau
+#     + d_inf(log_h + speed_shift * ln(tau / tau_ref_min)) * (1 - exp(-tau / tau_c0_min))
+# d_inf: Steffen monotone spline through the knots below (net density; log10 lux-seconds).
+# Fitted to: 6 min, 7.5 min, 10 min
+tau_c0_min,17.5853
+speed_shift,0.2848
+tau_ref_min,6.5
+base_density,0.1619
+fog_f1_per_min,0.00000
+log_h,d_inf
+-3.5499,0.00000
+-3.3499,0.10630
+-3.1499,0.14978
+-2.9499,0.14978
+-2.7499,0.15734
+-2.5499,0.17611
+-2.3499,0.22725
+-2.1499,0.34787
+-1.9499,0.57549
+-1.7499,0.92394
+-1.5499,1.35061
+-1.3499,1.79258
+-1.1499,2.22994
+-0.9499,2.65949
+-0.7499,3.06908
+-0.5499,3.44795
+-0.3499,3.81266
+-0.1499,4.17400
+0.0501,4.53131
+0.2501,4.88035
+0.4501,5.23588
+0.6501,5.59863
+0.6509,5.59965

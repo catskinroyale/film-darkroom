@@ -5,6 +5,45 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- **More films fitted to published curves.** T-Max 100 and T-Max 400 in D-76 are fitted
+  to Kodak's curve families (level 2). Tri-X and T-Max 400 in HC-110 B and D-76 1+1 are
+  calibrated from Kodak's contrast charts; their rates agree with Kodak's time tables.
+- **Ilford films from Ilford's curves.** HP5 Plus, FP4 Plus, 100 Delta, Delta 400 and
+  Delta 3200 take their curve shape from Ilford's datasheets (level 1: approximation) in
+  every developer. Kentmere and Double-X publish no curves and stay illustrative.
+- **Prints are exposed for the shadows.** The darkest tone with detail prints the same
+  whatever the development, instead of clear film. Normal development looks as before; a
+  push now holds the shadows and brightens the mid-tones and highlights, rather than
+  turning the whole print pale.
+- **Tri-X 400 in D-76 is now fitted to Kodak's published curves** (level 2:
+  sensitometric). The four curves of Kodak's D-76 family (F-4017) are read exactly from
+  the datasheet PDF and fitted with the engine's own model. The fit predicts a held-out
+  curve within 0.014 density and reproduces Kodak's contrast index and ISO speed. The
+  Calibration line under Development details says *level 2: sensitometric* for this
+  combination; the other films and developers stay illustrative.
+- **Longer development now makes the film faster**, as Kodak's curves show: a two-stop
+  push gains about one stop of real speed. (Only fitted calibrations use this.)
+- **A real paper.** Printing uses Kodak Polymax II RC's published curves for each
+  contrast filter (G-26), replacing the placeholder paper. **Paper grade** runs from −1
+  to 5 (Kodak's 5+), and the Print section shows the paper and its ISO R range. Prints
+  at grade 2 are a little softer than before: Kodak's filter 2 is R119.
+
+### Added
+- **An article about the app** in `docs/article/` (Markdown, and HTML with the
+  screenshots inline).
+- The About window says which films are fitted and credits Kodak's and Ilford's datasheets.
+- **A matte paper**: Polycontrast IV-like (Kodak G-4037, N surface), with blacks about 1.7
+  instead of glossy's 2.1. Choose it under **Paper** in the Print section.
+- **Preflash** in the Print section: an even pre-exposure that brings detail into bright
+  highlights.
+- `tools/raster_curve.py` traces a curve from a datasheet's raster image, for Ilford's
+  sheets.
+- Tools to read characteristic curves straight from datasheet PDFs and fit them
+  (`tools/datasheet_curves.py`, `fit_development.py`, `paper_family.py`), with the
+  extracted Kodak curves in `data/sensitometry/`. Design 0002 describes the method and the
+  validation.
+
 ### Fixed
 - The README showed an out-of-date screenshot: GitHub and browsers kept a cached copy
   of the reused file name. Each release's screenshot now has its own name.

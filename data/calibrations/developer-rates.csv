@@ -1,0 +1,11 @@
+# Developers without a curve family of their own (design 0001 §3.3 case 2, design 0002 §5).
+# rate: development speed against the film's fitted D-76 calibration, fitted by
+#   tools/fit_development.py --rate to Kodak's contrast-index-vs-time line for the developer:
+#   CI_dev(t) = CI_D76(rate * t). The curve shape is the D-76 one (stated assumption).
+# alpha_per_c: from Kodak's small-tank time table, ln(t18 / t24) / 6.
+# check: Kodak's normal-time ratio (D-76 time / developer time, small tank, 20 C).
+film,developer,rate,alpha_per_c,ci_rms,ci_max,check,source
+tri-x,hc110-b,1.747,0.0980,0.042,0.097,1.80,F-4017 p. 8 CI curves; p. 3 table
+tri-x,d76-1+1,0.699,0.0545,0.028,0.079,0.69,F-4017 p. 8 CI curves; p. 3 table
+tmax-400,hc110-b,1.294,0.0548,0.009,0.027,1.36,F-4043 p. 8 CI curves; p. 3 table
+tmax-400,d76-1+1,0.745,0.0568,0.025,0.052,0.73,F-4043 p. 8 CI curves; p. 3 table

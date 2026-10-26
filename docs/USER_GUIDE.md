@@ -11,10 +11,18 @@ darkroom. It doesn't apply a filter. It models four stages in order:
 Every style in the app is a recipe of those components, so you can change one stage and
 see its effect on the rest.
 
-> **About accuracy.** Film and developer behaviour is modelled from published data
-> (ISO speed, granularity, development times from the Massive Dev Chart). The curves are
-> still illustrative rather than measured from each product. A style named "Tri-X ·
-> D-76" means *Tri-X-like film in D-76-like developer*, not a calibrated copy.
+> **About accuracy.** Film and developer behaviour is modelled from published data. How
+> closely depends on what the manufacturer publishes, and the **Calibration** line under
+> Development details says which you're looking at:
+>
+> - **Level 2 (sensitometric):** Tri-X, T-Max 100 and T-Max 400 in D-76, fitted to Kodak's
+>   published curves; Tri-X and T-Max 400 in HC-110 B and D-76 1+1, from Kodak's contrast
+>   charts; both papers.
+> - **Level 1 (approximation):** HP5 Plus, FP4 Plus and the Delta films in every developer,
+>   from the one curve Ilford publishes per film.
+> - **Illustrative:** everything else (Kentmere, Double-X, Rodinal and FX-55 with Kodak
+>   films). A style named "Kentmere 400 · Rodinal" means *Kentmere-like film in
+>   Rodinal-like developer*, not a calibrated copy.
 
 ## Contents
 
@@ -197,8 +205,9 @@ Your photo is already correctly exposed, so in BW Darkroom push and pull change
 **development only**. The film is exposed at box speed and developed for the time
 published for the pushed or pulled EI. That's the Zone System's N+ and N− development.
 
-- **Push** keeps blacks black, opens the shadows slightly, brightens the highlights and
-  adds grain. Contrast rises.
+- **Push** holds the shadows, brightens the mid-tones and highlights, and adds grain.
+  Contrast rises. Kodak's curves show a two-stop push gains about one stop of real
+  speed, not two: the deepest shadows gain only a little.
 - **Pull** does the reverse: softer contrast, greyer highlights.
 
 The effect depends on the published times. For example, Tri-X in D-76 at Push 1 uses the
@@ -207,9 +216,10 @@ same time as box speed, because Kodak treats one stop as within the film's latit
 For the classic **underexposed push** (empty, blocked shadows), push and also lower
 **Exposure comp.** under **Development details**.
 
-The print keeps the same black point whatever the development, as a darkroom printer
-does when working to "minimum time for maximum black". So development changes show as
-they would under a real enlarger.
+The print is exposed for the shadows, as a darkroom printer would: the darkest tone with
+detail (zone I, four stops under mid-grey) prints the same whatever the development, so
+development changes show as they would under a real enlarger. A heavily pushed negative
+may want a softer paper grade, as in the darkroom.
 
 ## Grain
 
@@ -261,9 +271,17 @@ wherever it's most useful.
 
 In the **Print** section:
 
-- **Paper grade** (0–5) sets print contrast. Grade 2 is normal; higher is harder.
+- **Paper**: **Polymax II-like, glossy** (filters −1 to 5+, deep blacks) or **Polycontrast
+  IV-like, matte** (filters 1, 3 and 5+, blacks about 1.7 instead of 2.1, the softer look
+  of a matte print). Each filter's curve is Kodak's published one.
+- **Paper grade** sets print contrast with variable-contrast filters, from −1 (softest)
+  to 5 (Kodak's 5+). Grade 2 is normal. Half grades blend the curves either side. The line
+  under the slider gives the paper's **ISO R** range at that grade (higher is softer).
 - **Print exposure** makes the whole print darker (more exposure) or lighter (less), in
   stops, relative to the automatic exposure.
+- **Preflash** gives the paper a brief, even exposure first, as a percentage of the
+  exposure that just starts to grey it. It brings detail into bright skies and white
+  walls; mid-tones darken a little (about 0.15 density at 100%) and shadows don't change.
 
 The print is shown as paper reflectance, so the deepest black is the paper's black. On
 screen that's very dark grey rather than pure black, as it would look on a glossy

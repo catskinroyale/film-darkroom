@@ -124,7 +124,9 @@ impl About {
                 });
                 ui.label(
                     egui::RichText::new(
-                        "Film and developer parameters are illustrative, not calibrated emulations of the named products.",
+                        "Tri-X and T-Max are fitted to Kodak's published curves and Ilford films approximated from \
+                         Ilford's; other films are illustrative. All are emulations of published data, not \
+                         measurements of the named products.",
                     )
                     .small()
                     .weak(),
@@ -151,6 +153,7 @@ impl About {
                     ("Raw decoding", "LightCraft lightcraft-raw — MIT OR Apache-2.0"),
                     ("Camera colour matrices", "rawtoaces-data, Academy Software Foundation — Apache-2.0"),
                     ("Development times", "Massive Dev Chart, Digital Truth — not covered by this project's licences"),
+                    ("Film and paper curves", "Kodak and Ilford datasheets — not covered by this project's licences"),
                     ("Interface design", "Adapted from LightCraft, ArtCraft Team and LightCraft contributors — MIT"),
                     ("Interface font", "Inter, Rasmus Andersson — SIL OFL 1.1"),
                     ("Fallback fonts", "egui default fonts — Ubuntu Font Licence, SIL OFL 1.1"),

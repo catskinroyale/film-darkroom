@@ -17,8 +17,8 @@ interpretations (`docs/research/photographer-presets.md`).
 | Path | What |
 |---|---|
 | `crates/bw-core` (MIT) | Planes, geometry, curves, hash noise, blur |
-| `crates/bw-negative` | Exposure, development, adjacency, grain; `times.rs` reads `data/development/times.csv` |
-| `crates/bw-darkroom` | Printing (paper curve, black-point print exposure) |
+| `crates/bw-negative` | Exposure, development, adjacency, grain; `times.rs` reads `data/development/times.csv`; `fitted.rs` Level-2 calibrations from `data/calibrations/`; `combination()` prefers fitted over illustrative |
+| `crates/bw-darkroom` | Printing: measured paper grade family (`data/papers/`), black-point print exposure |
 | `crates/bw-profiles` | `Style` (film + developer + process + print + grain), `render`, `render_region` |
 | `crates/bw-raw` | Raw input via LightCraft's `lightcraft-raw` (pinned git rev) |
 | `apps/bw-desktop` | egui app: `app.rs` (state, panels, compare toolbar, image strip), `folders.rs` (folder tree) + `browser.rs` (listing, places, packages), `workflow.rs` (Develop sections), `image_panel.rs`, `widgets.rs` + `theme.rs` (LightCraft-derived UI), `updates.rs`, `worker.rs` (render thread) |
@@ -38,16 +38,34 @@ cargo run --release -p bw-desktop -- <folder-or-image>
 python3 -I tools/gen_licenses.py         # after dependency changes (About window list)
 ```
 
+Datasheet calibration (design 0002; needs a venv with pymupdf, numpy, scipy): read vector
+curves with `tools/datasheet_curves.py` (inspect → extract → overlay to check by eye), fit
+film families with `tools/fit_development.py`, build papers with `tools/paper_family.py`.
+Each `data/` folder's README has the exact commands. Only Kodak's PDFs are vector so far;
+Ilford's curves are raster images.
+
 `gh` is in `/opt/homebrew/bin` (`export PATH="/opt/homebrew/bin:$PATH"`).
 
 ## Model decisions to keep
 
+- **Development moves the curve** (design 0002 D12): `SpeedGain` shifts log H by
+  `s·ln(τ/τ_ref)`; Kodak's Tri-X family needs it (toe grows up to 4× when development
+  doubles). Illustrative calibrations keep `s = 0`. A two-stop push gains about one stop.
+- **The paper is measured** (Kodak Polymax II RC, filters −1…5+; in-between grades blend
+  horizontally). Grade = Kodak filter number.
+
 - **Push/pull change development only.** Styles expose the film at box speed
   (`Style::exposure_ei`); `exposure_index` picks the published time. An underexposed push
   is negative exposure compensation. See design 0001 D2 application note.
-- **Prints hold the black point** (`PrintExposure::BaseAt`), calibrated so normal
-  development prints as mid-grey anchoring did. Pushes keep blacks, open shadows slightly,
-  brighten highlights (`crates/bw-profiles/tests/push.rs`).
+- **Prints are exposed for the shadows** (decision P3, design 0002 §7): zone I prints at
+  the density normal development gives it (`Style::print_settings`, via
+  `PrintExposure::BaseAt`), so normal development prints as mid-grey anchoring did and a
+  push holds the shadows while mid-tones and highlights brighten
+  (`crates/bw-profiles/tests/push.rs`). Holding clear film made fitted pushes far too light.
+- **Calibration levels**: Level 2 = Kodak D-76 families (Tri-X, T-Max 100/400) and CI-line
+  developer rates; Level 1 = Ilford films (one curve, borrowed growth, ISO-anchored axis);
+  the rest illustrative. `bw_negative::combination` picks fitted, then Level 1, then
+  illustrative. Raster curves: `tools/raster_curve.py`.
 - **Grain** amplitude comes from published granularity; `GrainAdjust` (size, amount,
   roughness) defaults to the film's own grain. Grain noise is keyed on **full-frame pixel
   coordinates** (`RenderOptions::grain_origin`), so 1:1 detail crops match the export.

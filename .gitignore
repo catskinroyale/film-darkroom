@@ -4,3 +4,4 @@ target/
 !data/**/*.tif
 out/
 dist/
+__pycache__/

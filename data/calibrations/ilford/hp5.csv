@@ -1,0 +1,35 @@
+# Development calibration fitted by tools/fit_development.py (design 0002).
+# D = base_density + fog_f1_per_min * tau
+#     + d_inf(log_h + speed_shift * ln(tau / tau_ref_min)) * (1 - exp(-tau / tau_c0_min))
+# d_inf: Steffen monotone spline through the knots below (net density; log10 lux-seconds).
+# Fitted to: 6.5 min
+# Growth borrowed from data/calibrations/tri-x_d76-stock.csv (Level 1).
+# Relative exposure axis placed so the ISO speed at ISO contrast is 400.
+tau_c0_min,9.4820
+speed_shift,0.6486
+tau_ref_min,6.5
+base_density,0.1798
+fog_f1_per_min,0.00000
+log_h,d_inf
+-3.6793,0.00000
+-3.4793,0.00000
+-3.2793,0.00000
+-3.0793,0.01868
+-2.8793,0.07701
+-2.6793,0.17328
+-2.4793,0.31450
+-2.2793,0.50627
+-2.0793,0.73874
+-1.8793,1.01271
+-1.6793,1.29035
+-1.4793,1.55395
+-1.2793,1.81321
+-1.0793,2.07706
+-0.8793,2.33740
+-0.6793,2.59521
+-0.4793,2.84952
+-0.2793,3.10918
+-0.0793,3.36386
+0.1207,3.62753
+0.3207,3.87816
+0.3981,3.97910

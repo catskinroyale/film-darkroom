@@ -2,6 +2,10 @@
 
 Status: **Draft for review** · Date: 2026-10-20 · Scope: Phase 1 (mathematical model) and the shape of Phase 2 (Rust core)
 
+> **Amended by [design 0002](0002-datasheet-calibration-and-paper.md) (2026-10-24):** the
+> development family gains a speed shift (D12, §3.3), the push expectation in §8.2 becomes
+> "about one stop", and the minimal paper of §9.1 is replaced by a measured grade family.
+
 This document defines the mathematical and data models for the negative simulation engine: how a linear
 scene image becomes a simulated, developed black-and-white negative. Printing appears only where it
 constrains what the negative must store.

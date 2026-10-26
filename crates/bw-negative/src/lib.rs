@@ -5,9 +5,20 @@
 //!            ─► log ─► development curve D_mean ─► adjacency ─► grain ─► Negative
 //! ```
 
+pub mod fitted;
 pub mod illustrative;
 pub mod sensitometry;
 pub mod times;
+
+/// The best calibration for a film and developer combination: fitted to manufacturer
+/// sensitometry where available (`fitted`), illustrative otherwise.
+pub fn combination(
+    film_id: &str,
+    developer_id: &str,
+) -> Option<(bw_film::FilmStock, bw_developer::DevelopmentCalibration)> {
+    fitted::combination(film_id, developer_id)
+        .or_else(|| illustrative::combination(film_id, developer_id))
+}
 
 use bw_core::{FilmGeometry, Lut1D, Plane, blur, noise};
 use bw_developer::{DevelopmentCalibration, DevelopmentState, ProcessingConditions};

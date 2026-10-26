@@ -1,14 +1,17 @@
 # BW Darkroom
 
-![BW Darkroom: a raw photo of an arched stone doorway shown side by side, the colour original next to the print rendered as Tri-X developed in D-76, with the folder tree, the column of style previews, the comparison toolbar, the image strip, the Develop panel and the tool strip](docs/images/screenshot-0.10.0.jpg)
+![BW Darkroom: a raw photo of an arched stone doorway shown side by side, the colour original next to the print rendered as Tri-X developed in D-76, with the folder tree, the column of style previews, the comparison toolbar, the image strip, the Develop panel and the tool strip](docs/images/screenshot-0.11.0.jpg)
 
 A black-and-white photographic emulation engine in Rust, with a command-line tool and a
 desktop app. Film, developer and processing are modelled as separate components that
 interact through a simulated negative; printing is a separate stage on that negative.
 
-> **Status:** early prototype. Film and developer parameters are **illustrative**
-> placeholders, not yet fitted to manufacturer sensitometry. Product names describe the
-> intended target only. See [design 0001](docs/design/0001-negative-simulation-model.md).
+> **Status:** early prototype. Tri-X, T-Max 100 and T-Max 400 in D-76 (plus Tri-X and T-Max
+> 400 in HC-110 B and D-76 1+1) and both printing papers are fitted to Kodak's published
+> curves; the Ilford films are calibrated from Ilford's published curves at a lower level;
+> the rest are still **illustrative** placeholders, and their product names describe the
+> intended target only. See [design 0001](docs/design/0001-negative-simulation-model.md)
+> and [design 0002](docs/design/0002-datasheet-calibration-and-paper.md).
 
 ## Download
 
@@ -22,7 +25,8 @@ compiling needed.
   or allow it in System Settings → Privacy & Security.
 
 Every version is listed on the [releases page](https://github.com/catskinroyale/bnw-darkroom/releases).
-To use the app, see the [user guide](docs/USER_GUIDE.md). To build it yourself, see
+To use the app, see the [user guide](docs/USER_GUIDE.md). For a longer tour with
+screenshots, read the [article](docs/article/article.md). To build it yourself, see
 [Build and run](#build-and-run).
 
 ## Layout
@@ -39,7 +43,10 @@ To use the app, see the [user guide](docs/USER_GUIDE.md). To build it yourself, 
 | `apps/bw-cli` | `bw` command-line tool (`bw variations`) |
 | `apps/bw-desktop` | `bw-darkroom` desktop app (egui) |
 | `data/development` | Development times: raw Massive Dev Chart extract and the curated table |
+| `data/sensitometry` | Manufacturer curves read from datasheets, one folder per source |
+| `data/calibrations`, `data/papers` | Fitted development calibrations and paper grade families |
 | `tools/curate_times.py` | Rebuilds `times.csv` from the raw extract |
+| `tools/datasheet_curves.py`, `fit_development.py`, `paper_family.py` | Read vector curves from datasheet PDFs; fit them (design 0002) |
 | `docs/` | Design and source research |
 
 ## Build and run
@@ -81,7 +88,9 @@ Apache-2.0 through the workspace setting.
 
 Third-party code keeps its own licence: `lightcraft-raw` and its supporting crates are
 MIT OR Apache-2.0. The development-time data in `data/development/` is compiled from the
-Massive Dev Chart (Digital Truth) and is not covered by this project's licences.
+Massive Dev Chart (Digital Truth) and is not covered by this project's licences. The
+curves in `data/sensitometry/` are Kodak's, read from Kodak's datasheets (each folder's
+README names the document); they are not covered by this project's licences either.
 
 ## Data sources
 

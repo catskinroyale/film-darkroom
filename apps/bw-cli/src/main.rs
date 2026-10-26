@@ -12,7 +12,7 @@ use std::path::PathBuf;
 use bw_core::FilmGeometry;
 use bw_darkroom::{PrintSettings, print};
 use bw_developer::{Agitation, ProcessingConditions};
-use bw_negative::{ExposureSettings, Metering, RenderOptions, develop, illustrative, sensitometry};
+use bw_negative::{ExposureSettings, Metering, RenderOptions, develop, sensitometry};
 use clap::{Parser, Subcommand, ValueEnum};
 
 #[derive(Parser)]
@@ -185,7 +185,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let mut entries = Vec::new();
 
             for (i, var) in standard_variations().into_iter().enumerate() {
-                let (film, calibration) = illustrative::combination(var.film, var.developer)
+                let (film, calibration) = bw_negative::combination(var.film, var.developer)
                     .ok_or_else(|| {
                         format!(
                             "no illustrative calibration for {}/{}",
