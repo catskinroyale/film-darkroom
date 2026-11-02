@@ -1,0 +1,39 @@
+[workspace]
+resolver = "3"
+members = ["crates/*", "apps/*"]
+
+[workspace.package]
+edition = "2024"
+version = "0.0.0"
+# Default for every crate: Apache-2.0 (engine crates and apps). cd-core is MIT and sets its
+# own licence. See README "Licensing".
+license = "Apache-2.0"
+rust-version = "1.99"
+
+[workspace.dependencies]
+rayon = "1.10"
+thiserror = "2"
+proptest = "1"
+image = { version = "0.25", default-features = false, features = ["png", "tiff", "jpeg"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# Raw decoding from LightCraft (MIT OR Apache-2.0, pure Rust), pinned to the same commit as
+# BW Darkroom (reviewed 2026-10-20). Bump the rev deliberately and re-run the raw tests.
+lightcraft-raw = { git = "https://github.com/storytold/lightcraft", rev = "d999e382bafbb5d5c54482fdb1d11f6a63bfdf69", default-features = false }
+lightcraft-color = { git = "https://github.com/storytold/lightcraft", rev = "d999e382bafbb5d5c54482fdb1d11f6a63bfdf69" }
+lightcraft-raster = { git = "https://github.com/storytold/lightcraft", rev = "d999e382bafbb5d5c54482fdb1d11f6a63bfdf69" }
+lightcraft-geom = { git = "https://github.com/storytold/lightcraft", rev = "d999e382bafbb5d5c54482fdb1d11f6a63bfdf69" }
+
+[profile.release]
+debug = 1
+
+[profile.test]
+opt-level = 2
+
+# Distribution builds (tools/package-macos.sh): no debug info, stripped, thin LTO.
+[profile.dist]
+inherits = "release"
+debug = false
+strip = true
+lto = "thin"
+codegen-units = 1

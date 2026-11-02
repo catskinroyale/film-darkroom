@@ -1,0 +1,14 @@
+[package]
+name = "cd-core"
+description = "Numerical foundations for the colour film emulation engine: planes, scenes, film geometry, monotone curves, deterministic noise, filters."
+edition.workspace = true
+version.workspace = true
+license = "MIT"
+rust-version.workspace = true
+
+[dependencies]
+rayon.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true

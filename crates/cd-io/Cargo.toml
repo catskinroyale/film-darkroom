@@ -1,0 +1,13 @@
+[package]
+name = "cd-io"
+description = "Image loading, resampling and export for the colour film emulation engine."
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+cd-core = { path = "../cd-core" }
+image = { workspace = true }
+rayon.workspace = true
+exif = { package = "kamadak-exif", version = "0.6" }

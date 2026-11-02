@@ -1,0 +1,823 @@
+//! Camera raw input (`cd-raw`, as BW Darkroom's `bw-raw`).
+//!
+//! Decoding, demosaicing, the DNG colour model and highlight reconstruction come from
+//! LightCraft's `lightcraft-raw` (MIT OR Apache-2.0, pure Rust), pinned in the
+//! workspace manifest. This crate adds the scene-referred adjustments made before the
+//! film sees the image, and converts the result to the engine's working space
+//! (scene-linear Rec.709 primaries, D65).
+//!
+//! Only scene-referred edits belong here: exposure, white balance, highlight handling
+//! and orientation. Tone (contrast, highlights/shadows) is the job of the film,
+//! print and dyes, so it is deliberately not offered.
+//!
+//! Known gap: Nikon High Efficiency NEFs (HE / HE★, JPEG XS) cannot be decoded and are
+//! reported as unsupported; shoot lossless compressed NEF.
+
+use std::path::Path;
+
+use cd_core::Plane;
+use cd_core::SceneImage;
+use lightcraft_color::{Mat3, REC2020, SRGB, Xy, cct};
+use lightcraft_geom::Orientation;
+use lightcraft_raster::Rgb32f;
+use lightcraft_raw::{ColorData, Method, color, highlight};
+use rayon::prelude::*;
+use serde::{Deserialize, Serialize};
+use thiserror::Error;
+
+/// Raw file extensions the app offers (the decoder reads more; these are the
+/// formats of the cameras this project targets: Nikon, Leica DNG, Sony).
+pub const RAW_EXTENSIONS: [&str; 3] = ["nef", "dng", "arw"];
+
+pub fn is_raw(path: &Path) -> bool {
+    path.extension()
+        .and_then(|e| e.to_str())
+        .is_some_and(|e| RAW_EXTENSIONS.contains(&e.to_ascii_lowercase().as_str()))
+}
+
+#[derive(Debug, Error)]
+pub enum RawFileError {
+    #[error("cannot read {0}: {1}")]
+    Io(String, std::io::Error),
+    #[error(
+        "this raw variant isn't supported ({0}). Nikon High Efficiency (HE/HE★) NEFs can't be decoded yet: set the camera to lossless compressed NEF"
+    )]
+    Unsupported(String),
+    #[error("cannot decode raw file: {0}")]
+    Decode(String),
+}
+
+/// White balance: which light renders as neutral.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "mode", rename_all = "kebab-case")]
+pub enum WhiteBalance {
+    AsShot,
+    /// Grey-world estimate from the image itself.
+    Auto,
+    Daylight,
+    Cloudy,
+    Shade,
+    Tungsten,
+    Fluorescent,
+    Flash,
+    /// Correlated colour temperature (K) and green–magenta tint.
+    Custom {
+        temp: f64,
+        tint: f64,
+    },
+}
+
+impl WhiteBalance {
+    pub const PRESETS: [WhiteBalance; 8] = [
+        WhiteBalance::AsShot,
+        WhiteBalance::Auto,
+        WhiteBalance::Daylight,
+        WhiteBalance::Cloudy,
+        WhiteBalance::Shade,
+        WhiteBalance::Tungsten,
+        WhiteBalance::Fluorescent,
+        WhiteBalance::Flash,
+    ];
+
+    pub fn label(&self) -> &'static str {
+        match self {
+            Self::AsShot => "As shot",
+            Self::Auto => "Auto",
+            Self::Daylight => "Daylight",
+            Self::Cloudy => "Cloudy",
+            Self::Shade => "Shade",
+            Self::Tungsten => "Tungsten",
+            Self::Fluorescent => "Fluorescent",
+            Self::Flash => "Flash",
+            Self::Custom { .. } => "Custom",
+        }
+    }
+
+    /// Preset temperature and tint, using the conventional values photo editors use.
+    fn preset(&self) -> Option<(f64, f64)> {
+        Some(match self {
+            Self::Daylight => (5500.0, 10.0),
+            Self::Cloudy => (6500.0, 10.0),
+            Self::Shade => (7500.0, 10.0),
+            Self::Tungsten => (2850.0, 0.0),
+            Self::Fluorescent => (3800.0, 21.0),
+            Self::Flash => (5500.0, 0.0),
+            Self::Custom { temp, tint } => (*temp, *tint),
+            Self::AsShot | Self::Auto => return None,
+        })
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum Highlights {
+    /// Clip every channel at the lowest white-balanced clip level, so clipped areas are neutral.
+    Clip,
+    /// Rebuild partly clipped channels from the unclipped ones (LightCraft's reconstruction).
+    Reconstruct,
+}
+
+/// Per-image adjustments made before the film.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct RawAdjust {
+    /// Exposure correction in stops, applied in linear light.
+    pub exposure_ev: f64,
+    pub white_balance: WhiteBalance,
+    pub highlights: Highlights,
+    /// Extra clockwise quarter turns on top of the camera's orientation.
+    pub rotation: u8,
+    /// Scene contrast, −100…+100: a power curve on luminance around mid-grey (18 %),
+    /// applied before the film, like changing the lighting ratio. 0 leaves the scene alone.
+    #[serde(default)]
+    pub contrast: f64,
+    /// Defringe, 0…100: removes colour fringes (lens chromatic aberration, demosaic
+    /// colour) along high-contrast edges by pulling their colour towards neutral.
+    #[serde(default)]
+    pub defringe: f64,
+}
+
+/// Remove colour fringes along high-contrast edges.
+///
+/// Where the local luminance range (over a few pixels, in stops) is high, each pixel's
+/// colour is pulled towards its own luminance by up to `amount`/100; luminance is kept.
+/// Edges start to count at 1 stop of local range and fully at 3. Values more than about
+/// 5 stops below mid-grey are treated as black, so shadow noise is not mistaken for edges.
+/// The neighbourhood scales with the image (2 px on a 6000-px frame, 1 px on a preview),
+/// so previews match the export.
+pub fn apply_defringe(scene: &mut SceneImage, amount: f64) {
+    let SceneImage::Rgb { r, g, b } = scene else {
+        return;
+    };
+    let strength = (amount.clamp(0.0, 100.0) / 100.0) as f32;
+    if strength <= 0.0 {
+        return;
+    }
+    let (w, h) = (r.width(), r.height());
+    let radius = ((w.max(h) as f64 / 2500.0).round() as usize).max(1);
+    let log_y: Vec<f32> = r
+        .data()
+        .par_iter()
+        .zip(g.data().par_iter())
+        .zip(b.data().par_iter())
+        .map(|((r, g), b)| (0.2126 * r + 0.7152 * g + 0.0722 * b).max(0.005).log2())
+        .collect();
+    let hi = window_extreme(&log_y, w, h, radius, f32::max);
+    let lo = window_extreme(&log_y, w, h, radius, f32::min);
+    r.data_mut()
+        .par_iter_mut()
+        .zip(g.data_mut().par_iter_mut())
+        .zip(b.data_mut().par_iter_mut())
+        .enumerate()
+        .for_each(|(i, ((r, g), b))| {
+            let t = ((hi[i] - lo[i] - 1.0) / 2.0).clamp(0.0, 1.0);
+            let k = 1.0 - strength * t * t * (3.0 - 2.0 * t);
+            if k < 1.0 {
+                let y = 0.2126 * *r + 0.7152 * *g + 0.0722 * *b;
+                *r = y + (*r - y) * k;
+                *g = y + (*g - y) * k;
+                *b = y + (*b - y) * k;
+            }
+        });
+}
+
+/// Separable max (or min) over a (2r+1)² window, edges clamped.
+fn window_extreme(v: &[f32], w: usize, h: usize, r: usize, f: fn(f32, f32) -> f32) -> Vec<f32> {
+    let mut rows = vec![0f32; v.len()];
+    rows.par_chunks_mut(w).enumerate().for_each(|(y, out)| {
+        let row = &v[y * w..(y + 1) * w];
+        for (x, o) in out.iter_mut().enumerate() {
+            let (a, z) = (x.saturating_sub(r), (x + r).min(w - 1));
+            *o = row[a..=z].iter().copied().reduce(f).expect("non-empty");
+        }
+    });
+    let mut out = vec![0f32; v.len()];
+    out.par_chunks_mut(w).enumerate().for_each(|(y, o)| {
+        let (a, z) = (y.saturating_sub(r), (y + r).min(h - 1));
+        o.copy_from_slice(&rows[a * w..(a + 1) * w]);
+        for yy in a + 1..=z {
+            for (o, &v) in o.iter_mut().zip(&rows[yy * w..(yy + 1) * w]) {
+                *o = f(*o, v);
+            }
+        }
+    });
+    out
+}
+
+/// Luminance power `(Y / 0.18)^(γ − 1)` with `γ = 1.5^(contrast / 100)`: ±100 gives a
+/// gamma of 1.5 or 1/1.5 around mid-grey. Colour ratios are kept (each pixel's channels
+/// are scaled by the same factor), so the film's colour-to-grey conversion is unchanged.
+pub fn apply_contrast(scene: &mut SceneImage, contrast: f64) {
+    if contrast.abs() < 1e-9 {
+        return;
+    }
+    let exponent = (1.5f64.powf(contrast.clamp(-100.0, 100.0) / 100.0) - 1.0) as f32;
+    let factor = move |y: f32| {
+        if y <= 1e-6 {
+            1.0
+        } else {
+            (y / 0.18).powf(exponent).clamp(0.0, 64.0)
+        }
+    };
+    match scene {
+        SceneImage::Mono { y } => y.data_mut().par_iter_mut().for_each(|v| *v *= factor(*v)),
+        SceneImage::Rgb { r, g, b } => {
+            r.data_mut()
+                .par_iter_mut()
+                .zip(g.data_mut().par_iter_mut())
+                .zip(b.data_mut().par_iter_mut())
+                .for_each(|((r, g), b)| {
+                    let f = factor(0.2126 * *r + 0.7152 * *g + 0.0722 * *b);
+                    *r *= f;
+                    *g *= f;
+                    *b *= f;
+                });
+        }
+    }
+}
+
+impl Default for RawAdjust {
+    fn default() -> Self {
+        Self {
+            exposure_ev: 0.0,
+            white_balance: WhiteBalance::AsShot,
+            highlights: Highlights::Reconstruct,
+            rotation: 0,
+            contrast: 0.0,
+            defringe: 0.0,
+        }
+    }
+}
+
+/// Camera and capture details shown in the UI.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct CaptureInfo {
+    pub camera: String,
+    pub iso: Option<u32>,
+    pub exposure_time: Option<f64>,
+    pub f_number: Option<f64>,
+    pub focal_length: Option<f64>,
+    pub width: usize,
+    pub height: usize,
+    pub monochrome: bool,
+    /// No colour matrix was available for this camera; colour is approximate.
+    pub matrix_is_fallback: bool,
+    /// Colour comes from matrices fitted to the camera's measured spectral sensitivities.
+    pub spectral_matrix: bool,
+}
+
+/// "NIKON CORPORATION" + "NIKON Z f" → "Nikon Z f".
+fn camera_name(make: Option<&str>, model: Option<&str>) -> String {
+    let make = make.map(str::trim).unwrap_or("");
+    let model = model.map(str::trim).unwrap_or("");
+    let brand = make.split_whitespace().next().unwrap_or("");
+    let title = |s: &str| {
+        let lower = s.to_lowercase();
+        let mut c = lower.chars();
+        c.next()
+            .map_or(String::new(), |f| f.to_uppercase().chain(c).collect())
+    };
+    let model_rest = model
+        .strip_prefix(brand)
+        .map(str::trim)
+        .filter(|_| !brand.is_empty())
+        .unwrap_or(model);
+    match (brand.is_empty(), model_rest.is_empty()) {
+        (true, true) => "Unknown camera".into(),
+        (true, false) => model_rest.into(),
+        (false, true) => title(brand),
+        (false, false) => format!("{} {model_rest}", title(brand)),
+    }
+}
+
+impl CaptureInfo {
+    pub fn summary(&self) -> String {
+        let mut parts = vec![self.camera.clone()];
+        if let Some(t) = self.exposure_time {
+            parts.push(if t < 1.0 {
+                format!("1/{:.0} s", 1.0 / t)
+            } else {
+                format!("{t:.1} s")
+            });
+        }
+        if let Some(f) = self.f_number {
+            parts.push(format!("f/{f:.1}"));
+        }
+        if let Some(iso) = self.iso {
+            parts.push(format!("ISO {iso}"));
+        }
+        if let Some(fl) = self.focal_length {
+            parts.push(format!("{fl:.0} mm"));
+        }
+        parts.join(" · ")
+    }
+}
+
+#[derive(Clone)]
+enum Pixels {
+    /// Demosaiced camera RGB, not white balanced, white level 1.0, not oriented.
+    Rgb(Rgb32f),
+    /// Monochrome sensor data (e.g. Leica Monochrom), white level 1.0, not oriented.
+    Mono(Plane),
+}
+
+/// A decoded raw photo, ready to be developed with [`RawAdjust`] settings.
+#[derive(Clone)]
+pub struct RawPhoto {
+    pixels: Pixels,
+    color: ColorData,
+    wb_multipliers: Option<[f32; 3]>,
+    orientation: Orientation,
+    pub info: CaptureInfo,
+}
+
+/// Map an EXIF orientation to `(mirror, clockwise quarter turns)` for [`cd_io::transform`].
+pub fn exif_transform(o: Orientation) -> (bool, u8) {
+    match o {
+        Orientation::Normal => (false, 0),
+        Orientation::FlipH => (true, 0),
+        Orientation::Rotate180 => (false, 2),
+        Orientation::FlipV => (true, 2),
+        Orientation::Transpose => (true, 3),
+        Orientation::Rotate90 => (false, 1),
+        Orientation::Transverse => (true, 1),
+        Orientation::Rotate270 => (false, 3),
+    }
+}
+
+/// Decode and demosaic a raw file (Adaptive Homogeneity-Directed demosaic).
+pub fn open(path: &Path) -> Result<RawPhoto, RawFileError> {
+    let bytes = std::fs::read(path).map_err(|e| RawFileError::Io(path.display().to_string(), e))?;
+    let mut raw = lightcraft_raw::decode(&bytes).map_err(|e| match e {
+        lightcraft_raw::RawError::Unsupported(s) => RawFileError::Unsupported(s),
+        other => RawFileError::Decode(other.to_string()),
+    })?;
+    drop(bytes);
+    // Non-DNG raws (NEF, ARW) carry no colour matrix: use LightCraft's matrices fitted
+    // to the camera's measured spectral sensitivities (rawtoaces-data), when listed.
+    let spectral_matrix = raw
+        .metadata
+        .model
+        .as_deref()
+        .and_then(|model| lightcraft_raw::spectral::find(raw.metadata.make.as_deref(), model))
+        .is_some_and(|camera| camera.fill(&mut raw.color));
+
+    let monochrome = raw.cfa.is_none() && raw.cpp == 1;
+    let pixels = if monochrome {
+        let n = raw
+            .normalized()
+            .map_err(|e| RawFileError::Decode(e.to_string()))?;
+        let c = raw.develop_crop(n.width, n.height);
+        let plane = Plane::from_fn(c.width, c.height, |x, y| {
+            n.data[(c.y + y) * n.width + c.x + x]
+        })
+        .map_err(|e| RawFileError::Decode(e.to_string()))?;
+        Pixels::Mono(plane)
+    } else {
+        Pixels::Rgb(
+            raw.develop(Method::Ahd)
+                .map_err(|e| RawFileError::Decode(e.to_string()))?,
+        )
+    };
+    let (width, height) = match &pixels {
+        Pixels::Rgb(img) => (img.width, img.height),
+        Pixels::Mono(p) => (p.width(), p.height()),
+    };
+    let m = &raw.metadata;
+    let camera = camera_name(m.make.as_deref(), m.model.as_deref());
+    let info = CaptureInfo {
+        camera: if camera.is_empty() {
+            "Unknown camera".into()
+        } else {
+            camera
+        },
+        iso: m.iso,
+        exposure_time: m.exposure_time,
+        f_number: m.f_number,
+        focal_length: m.focal_length,
+        width,
+        height,
+        monochrome,
+        matrix_is_fallback: !color::has_matrix(&raw.color),
+        spectral_matrix,
+    };
+    Ok(RawPhoto {
+        pixels,
+        color: raw.color,
+        wb_multipliers: raw.wb_multipliers,
+        orientation: raw.orientation,
+        info,
+    })
+}
+
+/// The camera's embedded JPEG preview as RGBA, reduced to fit `max_edge` (for thumbnails),
+/// turned upright. The preview is stored as the sensor saw it, so the raw file's own
+/// orientation tag (read from its headers, without decoding the samples) is applied.
+pub fn thumbnail(path: &Path, max_edge: u32) -> Option<(usize, usize, Vec<u8>)> {
+    let bytes = std::fs::read(path).ok()?;
+    let jpeg = lightcraft_raw::embedded_preview(&bytes)?;
+    let img = image::load_from_memory(&jpeg)
+        .ok()?
+        .thumbnail(max_edge, max_edge);
+    let orientation = lightcraft_raw::probe_info(&bytes)
+        .map(|info| info.orientation)
+        .unwrap_or(Orientation::Normal);
+    let img = orient(img, orientation).to_rgba8();
+    Some((img.width() as usize, img.height() as usize, img.into_raw()))
+}
+
+/// `img` turned as the EXIF `orientation` says: mirror, then quarter turns clockwise.
+fn orient(img: image::DynamicImage, orientation: Orientation) -> image::DynamicImage {
+    let (flip, turns) = exif_transform(orientation);
+    let img = if flip { img.fliph() } else { img };
+    match turns {
+        1 => img.rotate90(),
+        2 => img.rotate180(),
+        3 => img.rotate270(),
+        _ => img,
+    }
+}
+
+impl RawPhoto {
+    /// A copy reduced so its long edge is at most `max_edge` (box filter, before any
+    /// colour processing, which is linear so the result matches developing in full).
+    pub fn downscaled(&self, max_edge: usize) -> RawPhoto {
+        let mut out = self.clone();
+        out.pixels = match &self.pixels {
+            Pixels::Mono(p) => {
+                let scene = cd_io::downscale(&SceneImage::Mono { y: p.clone() }, max_edge);
+                let SceneImage::Mono { y } = scene else {
+                    unreachable!("mono stays mono")
+                };
+                Pixels::Mono(y)
+            }
+            Pixels::Rgb(img) => {
+                let factor = img.width.max(img.height).div_ceil(max_edge.max(1));
+                if factor <= 1 {
+                    Pixels::Rgb(img.clone())
+                } else {
+                    Pixels::Rgb(lightcraft_raster::resample::resize(
+                        img,
+                        (img.width / factor).max(1),
+                        (img.height / factor).max(1),
+                        lightcraft_raster::resample::Filter::Box,
+                    ))
+                }
+            }
+        };
+        out
+    }
+
+    /// The camera's recorded white (as shot).
+    pub fn as_shot_white(&self) -> Xy {
+        color::as_shot_white_of(&self.color, self.wb_multipliers)
+    }
+
+    /// As-shot white as (temperature K, tint), for showing on the sliders.
+    pub fn as_shot_temp_tint(&self) -> (f64, f64) {
+        cct::xy_to_temp_tint(self.as_shot_white())
+    }
+
+    /// The white point a white-balance setting resolves to.
+    pub fn white_for(&self, wb: WhiteBalance) -> Xy {
+        match wb {
+            WhiteBalance::AsShot => self.as_shot_white(),
+            WhiteBalance::Auto => match &self.pixels {
+                Pixels::Rgb(img) => {
+                    let mult = color::grey_world(img);
+                    let neutral = [
+                        1.0 / f64::from(mult[0]),
+                        1.0 / f64::from(mult[1]),
+                        1.0 / f64::from(mult[2]),
+                    ];
+                    color::neutral_to_xy(&self.color, neutral)
+                }
+                Pixels::Mono(_) => self.as_shot_white(),
+            },
+            other => {
+                let (t, tint) = other
+                    .preset()
+                    .expect("presets and custom have a temperature");
+                cct::temp_tint_to_xy(t, tint)
+            }
+        }
+    }
+
+    /// (temperature, tint) a white-balance setting resolves to, for the sliders.
+    pub fn temp_tint_for(&self, wb: WhiteBalance) -> (f64, f64) {
+        cct::xy_to_temp_tint(self.white_for(wb))
+    }
+
+    /// Exposure (stops) that would put the log-average scene luminance at 18 %:
+    /// what an averaging meter would choose.
+    pub fn auto_exposure_ev(&self, adjust: &RawAdjust) -> f64 {
+        let probe = RawAdjust {
+            exposure_ev: 0.0,
+            ..*adjust
+        };
+        let small = self.downscaled(512).develop(&probe);
+        let y = match &small {
+            SceneImage::Mono { y } => y.data().to_vec(),
+            SceneImage::Rgb { r, g, b } => r
+                .data()
+                .iter()
+                .zip(g.data())
+                .zip(b.data())
+                .map(|((r, g), b)| 0.2126 * r + 0.7152 * g + 0.0722 * b)
+                .collect(),
+        };
+        let (sum, n) = y
+            .iter()
+            .filter(|v| **v > 1e-5)
+            .fold((0.0f64, 0usize), |(s, n), v| {
+                (s + f64::from(*v).ln(), n + 1)
+            });
+        if n == 0 {
+            return 0.0;
+        }
+        let mean = (sum / n as f64).exp();
+        ((0.18 / mean).log2() * 3.0).round() / 3.0
+    }
+
+    /// Develop into the engine's scene-linear Rec.709 working space.
+    pub fn develop(&self, adjust: &RawAdjust) -> SceneImage {
+        let gain = 2f32.powf(adjust.exposure_ev as f32);
+        let scene = match &self.pixels {
+            Pixels::Mono(p) => {
+                let mut y = p.clone();
+                y.data_mut()
+                    .par_iter_mut()
+                    .for_each(|v| *v = (*v * gain).max(0.0));
+                SceneImage::Mono { y }
+            }
+            Pixels::Rgb(img) => {
+                let transform =
+                    color::camera_transform_of(&self.color, self.white_for(adjust.white_balance));
+                let mut cam = img.clone();
+                match adjust.highlights {
+                    Highlights::Clip => highlight::clip_neutral(&mut cam, transform.wb, 1.0),
+                    Highlights::Reconstruct => {
+                        highlight::reconstruct(&mut cam, transform.wb, 1.0);
+                    }
+                }
+                // camera → (white balance) → Rec.2020 → Rec.709, then exposure, as one matrix.
+                // Values outside Rec.709 stay negative here; the film's spectral projection
+                // is linear, so no information is clipped before it.
+                let to_709: Mat3 = REC2020.to_space(&SRGB).mul(&transform.matrix);
+                let wb = transform.wb;
+                let m: [[f32; 3]; 3] = to_709.to_f32();
+                let n = cam.width * cam.height;
+                let (mut r, mut g, mut b) = (vec![0f32; n], vec![0f32; n], vec![0f32; n]);
+                r.par_iter_mut()
+                    .zip(g.par_iter_mut())
+                    .zip(b.par_iter_mut())
+                    .zip(cam.data.par_iter())
+                    .for_each(|(((r, g), b), px)| {
+                        let c = [px[0] * wb[0], px[1] * wb[1], px[2] * wb[2]];
+                        *r = gain * (m[0][0] * c[0] + m[0][1] * c[1] + m[0][2] * c[2]);
+                        *g = gain * (m[1][0] * c[0] + m[1][1] * c[1] + m[1][2] * c[2]);
+                        *b = gain * (m[2][0] * c[0] + m[2][1] * c[1] + m[2][2] * c[2]);
+                    });
+                let plane = |v| Plane::from_vec(cam.width, cam.height, v).expect("sizes match");
+                SceneImage::Rgb {
+                    r: plane(r),
+                    g: plane(g),
+                    b: plane(b),
+                }
+            }
+        };
+        let mut scene = scene;
+        apply_contrast(&mut scene, adjust.contrast);
+        apply_defringe(&mut scene, adjust.defringe);
+        let (flip, turns) = exif_transform(self.orientation);
+        cd_io::transform(&scene, flip, (turns + adjust.rotation) % 4)
+    }
+}
+
+/// Exposure and rotation for non-raw (already rendered) images. White balance and
+/// highlight reconstruction need raw data and are not applied.
+pub fn adjust_rendered(scene: &SceneImage, adjust: &RawAdjust) -> SceneImage {
+    let mut scaled = if adjust.exposure_ev == 0.0 {
+        scene.clone()
+    } else {
+        cd_io::scale(scene, 2f32.powf(adjust.exposure_ev as f32))
+    };
+    apply_contrast(&mut scaled, adjust.contrast);
+    apply_defringe(&mut scaled, adjust.defringe);
+    cd_io::transform(&scaled, false, adjust.rotation % 4)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn exif_transforms_compose_to_identity_with_their_inverse_turns() {
+        for (o, expected) in [
+            (Orientation::Normal, (false, 0)),
+            (Orientation::Rotate90, (false, 1)),
+            (Orientation::Rotate180, (false, 2)),
+            (Orientation::Rotate270, (false, 3)),
+        ] {
+            assert_eq!(exif_transform(o), expected);
+        }
+    }
+
+    #[test]
+    fn portrait_thumbnails_are_turned_upright() {
+        // A landscape preview of a camera held for a portrait: the top-left pixel is marked.
+        let mut img = image::RgbaImage::new(3, 2);
+        img.put_pixel(0, 0, image::Rgba([255, 0, 0, 255]));
+        let img = image::DynamicImage::ImageRgba8(img);
+        let upright = orient(img.clone(), Orientation::Rotate90).to_rgba8();
+        assert_eq!(upright.dimensions(), (2, 3));
+        // Turned clockwise, the top-left corner moves to the top right.
+        assert_eq!(upright.get_pixel(1, 0).0, [255, 0, 0, 255]);
+        assert_eq!(
+            orient(img, Orientation::Normal).to_rgba8().dimensions(),
+            (3, 2)
+        );
+    }
+
+    #[test]
+    fn camera_names_drop_repeated_make() {
+        assert_eq!(
+            camera_name(Some("NIKON CORPORATION"), Some("NIKON Z f")),
+            "Nikon Z f"
+        );
+        assert_eq!(camera_name(Some("SONY"), Some("ILCE-7M4")), "Sony ILCE-7M4");
+        assert_eq!(
+            camera_name(Some("LEICA"), Some("M MONOCHROM (Typ 246)")),
+            "Leica M MONOCHROM (Typ 246)"
+        );
+        assert_eq!(camera_name(None, None), "Unknown camera");
+    }
+
+    #[test]
+    fn white_balance_presets_resolve_to_plausible_temperatures() {
+        for wb in [
+            WhiteBalance::Daylight,
+            WhiteBalance::Tungsten,
+            WhiteBalance::Shade,
+        ] {
+            let (t, _) = wb.preset().unwrap();
+            let (t2, _) = cct::xy_to_temp_tint(cct::temp_tint_to_xy(t, 0.0));
+            assert!((t2 - t).abs() / t < 0.01, "{wb:?}: {t} vs {t2}");
+        }
+    }
+
+    #[test]
+    fn adjustments_round_trip_through_json() {
+        let a = RawAdjust {
+            exposure_ev: 0.67,
+            white_balance: WhiteBalance::Custom {
+                temp: 4300.0,
+                tint: -5.0,
+            },
+            highlights: Highlights::Clip,
+            rotation: 3,
+            contrast: 25.0,
+            defringe: 40.0,
+        };
+        // Sidecars written before the contrast control load with contrast 0.
+        let old: RawAdjust = serde_json::from_str(
+            r#"{"exposure_ev":0.5,"white_balance":{"mode":"as-shot"},"highlights":"clip","rotation":0}"#,
+        )
+        .unwrap();
+        assert_eq!(old.contrast, 0.0);
+        assert_eq!(old.defringe, 0.0);
+        let json = serde_json::to_string(&a).unwrap();
+        assert!(json.contains("\"mode\":\"custom\""), "{json}");
+        let back: RawAdjust = serde_json::from_str(&json).unwrap();
+        assert_eq!(back, a);
+    }
+
+    #[test]
+    fn defringe_neutralises_edge_colour_and_leaves_flat_colour() {
+        // A bright neutral rail on a dark ground, fringed yellow above and blue below,
+        // next to a flat red patch.
+        let (w, h) = (40, 30);
+        let px = |x: usize, y: usize| -> [f32; 3] {
+            match (x, y) {
+                (x, _) if x >= 30 => [0.4, 0.1, 0.08],
+                (_, 14) => [0.9, 0.8, 0.2],
+                (_, 15) => [3.0, 3.0, 3.0],
+                (_, 16) => [0.2, 0.5, 0.9],
+                _ => [0.01, 0.01, 0.01],
+            }
+        };
+        let plane = |c: usize| Plane::from_fn(w, h, |x, y| px(x, y)[c]).unwrap();
+        let mut scene = SceneImage::Rgb {
+            r: plane(0),
+            g: plane(1),
+            b: plane(2),
+        };
+        apply_defringe(&mut scene, 100.0);
+        let SceneImage::Rgb { r, g, b } = &scene else {
+            unreachable!()
+        };
+        for y in [14, 16] {
+            let (r, g, b) = (r.get(10, y), g.get(10, y), b.get(10, y));
+            assert!(
+                (r - b).abs() < 0.02 && (g - b).abs() < 0.02,
+                "row {y}: {r} {g} {b}"
+            );
+        }
+        // Flat colour away from any edge keeps its colour.
+        assert!((r.get(36, 5) - 0.4).abs() < 1e-6 && (b.get(36, 5) - 0.08).abs() < 1e-6);
+        // Zero does nothing.
+        let mut same = SceneImage::Rgb {
+            r: plane(0),
+            g: plane(1),
+            b: plane(2),
+        };
+        apply_defringe(&mut same, 0.0);
+        let SceneImage::Rgb { b, .. } = &same else {
+            unreachable!()
+        };
+        assert_eq!(b.get(10, 16), 0.9);
+    }
+
+    #[test]
+    fn contrast_pivots_on_mid_grey_and_keeps_colour_ratios() {
+        let y = Plane::from_fn(3, 1, |x, _| [0.045, 0.18, 0.72][x]).unwrap();
+        let mut scene = SceneImage::Mono { y };
+        apply_contrast(&mut scene, 100.0);
+        let SceneImage::Mono { y } = &scene else {
+            unreachable!()
+        };
+        assert!((y.get(1, 0) - 0.18).abs() < 1e-6, "mid-grey fixed");
+        // Two stops either side of grey move to three stops (γ = 1.5).
+        assert!((y.get(0, 0) / 0.18 - 0.125).abs() < 1e-3);
+        assert!((y.get(2, 0) / 0.18 - 8.0).abs() < 1e-2);
+
+        let one = |v| Plane::filled(1, 1, v).unwrap();
+        let mut rgb = SceneImage::Rgb {
+            r: one(0.4),
+            g: one(0.2),
+            b: one(0.1),
+        };
+        apply_contrast(&mut rgb, -60.0);
+        let SceneImage::Rgb { r, g, b } = &rgb else {
+            unreachable!()
+        };
+        assert!((r.get(0, 0) / g.get(0, 0) - 2.0).abs() < 1e-5);
+        assert!((g.get(0, 0) / b.get(0, 0) - 2.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn rendered_images_get_exposure_and_rotation() {
+        let y = Plane::from_fn(4, 2, |x, _| x as f32 / 4.0).unwrap();
+        let scene = SceneImage::Mono { y };
+        let adj = RawAdjust {
+            exposure_ev: 1.0,
+            rotation: 1,
+            ..Default::default()
+        };
+        let SceneImage::Mono { y } = adjust_rendered(&scene, &adj) else {
+            unreachable!()
+        };
+        assert_eq!((y.width(), y.height()), (2, 4));
+        assert!((y.data().iter().copied().fold(0.0f32, f32::max) - 1.5).abs() < 1e-6);
+    }
+
+    fn exif_tag_make() -> cd_io::metadata::ExifTag {
+        cd_io::metadata::ExifTag::Make
+    }
+
+    /// Decodes a real Nikon Z f NEF when `COLOUR_RAW_SAMPLE` points at one (CC0 samples:
+    /// raw.pixls.us/data/Nikon/Z f/).
+    #[test]
+    fn decodes_sample_nef_when_available() {
+        let Some(path) = std::env::var_os("COLOUR_RAW_SAMPLE") else {
+            eprintln!("skipped: set COLOUR_RAW_SAMPLE to a raw file");
+            return;
+        };
+        let photo = match open(Path::new(&path)) {
+            Ok(p) => p,
+            Err(RawFileError::Unsupported(s)) => {
+                eprintln!("unsupported variant reported cleanly: {s}");
+                return;
+            }
+            Err(e) => panic!("{e}"),
+        };
+        assert!(photo.info.width > 1000 && photo.info.height > 1000);
+        if photo.info.camera.contains("Z f") {
+            assert!(
+                photo.info.spectral_matrix && !photo.info.matrix_is_fallback,
+                "{:?}",
+                photo.info
+            );
+        }
+        let (t, _) = photo.as_shot_temp_tint();
+        assert!((2000.0..12000.0).contains(&t), "as-shot temperature {t}");
+        // The raw file's EXIF (camera, exposure, date) is readable for exports.
+        let exif = cd_io::read_exif(Path::new(&path)).expect("raw EXIF");
+        assert!(exif.get(exif_tag_make()).is_some());
+        let scene = photo.downscaled(800).develop(&RawAdjust::default());
+        let (w, h) = scene.dimensions();
+        assert!(w.max(h) <= 800);
+        if let SceneImage::Rgb { g, .. } = &scene {
+            assert!(g.data().iter().all(|v| v.is_finite()));
+        }
+    }
+}

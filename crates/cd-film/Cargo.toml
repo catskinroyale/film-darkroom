@@ -1,0 +1,11 @@
+[package]
+name = "cd-film"
+description = "Colour film model: dye layers, characteristic curves, interlayer effects, halation, grain, printing and dyes."
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+cd-core = { path = "../cd-core" }
+rayon.workspace = true
