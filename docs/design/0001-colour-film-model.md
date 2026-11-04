@@ -10,6 +10,7 @@ a colour grade or LUT. Each control maps onto something that happens to film.
 
 ```text
 scene (camera raw → scene-linear Rec.709, white-balanced)
+  │  film compression (optional): highlights rolled towards the mid-tones, in stops
   │  ×2^EV / 0.18                       exposure relative to the metered grey
   ▼
 layer exposures  H = S · scene          S: 3×3 spectral sensitivity, rows sum to 1
@@ -44,6 +45,7 @@ Reversal (slide) film skips the print: its own falling curve and dyes are viewed
 | C6 | **Stock looks as printer points.** | Each stock carries `look_points`: the lab rendering it is known for (Gold's warmth, 400H's cool cast). It is a separate, switchable layer ("Film's lab look"), so the strictly neutral print is always available. |
 | C7 | **Grain is BW Darkroom's Selwyn model per layer.** | σ²(D) ∝ granularity area × D / pixel area, keyed on full-frame pixel coordinates, so the 1:1 detail view's grain matches the export. The blue-sensitive (fast) layer is grainiest. |
 | C8 | **The neutral scan is a print with ideal dyes.** | Scanning is modelled as printing onto a virtual stock with no dye crosstalk and a gentle curve, so it shares timing and printer lights with real prints. |
+| C10 | **Film compression is a creative, scene-referred stage before the film**, after Dehancer's tool of that name. On luminance stops around grey: a soft knee placed by *Tonal range*, a slope above it lowered by *Impact* (down to 0.25), the compressed part stretched or squeezed by *White point* (50–120), and *Colour density* fading compressed highlights towards neutral. Colour ratios are kept otherwise; off by default. | Digital highlights clip where a negative keeps absorbing light. The film's own shoulder still applies afterwards; compression lets a photo's highlights reach it gently, as heavy overexposure on negative does, and recovers window views and skies. It is labelled a creative control, not a physical layer. |
 | C9 | **Push/pull change development only**, as in BW Darkroom. | Your photo is already exposed. A push raises contrast (~12 %/stop), shadow speed and grain for negatives; slides gain about a stop per stop. |
 
 ## 3. What is illustrative

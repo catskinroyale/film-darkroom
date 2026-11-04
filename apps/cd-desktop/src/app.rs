@@ -1962,6 +1962,9 @@ impl App {
                 widgets::section(ui, "film", "Film", true, |ui| {
                     workflow::film_section(ui, draft, summary)
                 });
+                widgets::section(ui, "compression", "Film compression", false, |ui| {
+                    workflow::compression_section(ui, draft)
+                });
                 widgets::section(ui, "light", "Light", false, |ui| {
                     workflow::light_section(ui, draft)
                 });

@@ -45,6 +45,20 @@ filtered for the light. For tungsten film's blue look in daylight (Vision3 500T,
   More gives purer colour; greys never change.
 - **Characteristic curves**: the red, green and blue layers' density against exposure.
 
+### Film compression
+
+Rolls the photo's highlights off towards the mid-tones, the way a negative keeps absorbing
+light where a sensor clips. Useful for bright windows, skies and lamps. The curve shows
+scene stops in against stops out.
+
+- **Impact**: how strongly highlights are pulled down. 0 is off.
+- **Tonal range**: how far down it reaches, from just the brightest highlights (low) to
+  almost the shadows (100).
+- **White point**: lower gives more highlight contrast and clips sooner; higher gives
+  flatter, greyer highlights. 100 is neutral.
+- **Colour density**: 0 fades compressed highlights towards neutral, as colour negative
+  does; 100 keeps their colour, like slide film.
+
 ### Light
 
 - **Halation**: the red-orange glow film gets round bright lights, from light bouncing off

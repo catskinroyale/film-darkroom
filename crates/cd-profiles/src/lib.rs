@@ -9,7 +9,7 @@ use cd_film::{
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-pub use cd_film::{FilmKind, film_stocks, print_stocks};
+pub use cd_film::{Compression, FilmKind, film_stocks, print_stocks};
 
 #[derive(Debug, Error)]
 pub enum StyleError {
@@ -95,6 +95,43 @@ impl LightSpec {
     }
 }
 
+/// Film compression of the highlights before the film (design 0001 C10).
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct CompressionSpec {
+    pub impact: f64,
+    pub tonal_range: f64,
+    pub white_point: f64,
+    pub colour_density: f64,
+}
+
+impl Default for CompressionSpec {
+    fn default() -> Self {
+        let c = Compression::default();
+        Self {
+            impact: c.impact,
+            tonal_range: c.tonal_range,
+            white_point: c.white_point,
+            colour_density: c.colour_density,
+        }
+    }
+}
+
+impl CompressionSpec {
+    pub fn compression(&self) -> Compression {
+        Compression {
+            impact: self.impact,
+            tonal_range: self.tonal_range,
+            white_point: self.white_point,
+            colour_density: self.colour_density,
+        }
+    }
+
+    pub fn is_default(&self) -> bool {
+        *self == Self::default()
+    }
+}
+
 /// Printing: exposure and colour on top of the grey-timed print.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
@@ -149,6 +186,8 @@ pub struct Style {
     pub interlayer: f64,
     #[serde(default)]
     pub printing: PrintSpec,
+    #[serde(default, skip_serializing_if = "CompressionSpec::is_default")]
+    pub compression: CompressionSpec,
     #[serde(default, skip_serializing_if = "LightSpec::is_default")]
     pub light: LightSpec,
     #[serde(default, skip_serializing_if = "GrainSpec::is_film_grain")]
@@ -256,6 +295,7 @@ impl Style {
             ev_compensation: self.ev_compensation,
             push: self.push,
             interlayer: self.interlayer,
+            compression: self.compression.compression(),
             grain: self.grain.adjust(),
             light: self.light.effects(),
             printing: self.printing.printing(),
@@ -362,6 +402,7 @@ pub fn builtin_styles() -> Vec<Style> {
         push: 0.0,
         interlayer: 1.0,
         printing: PrintSpec::default(),
+        compression: CompressionSpec::default(),
         light: LightSpec::default(),
         grain: GrainSpec::default(),
         seed: 1,
@@ -395,6 +436,13 @@ pub fn builtin_styles() -> Vec<Style> {
     let mut medium = s("Portra 160 · 6×7", "portra-160", "scan");
     medium.format_mm = 70.0;
     styles.insert(4, medium);
+    let mut soft = s("Portra 400 · film compression", "portra-400", "scan");
+    soft.compression = CompressionSpec {
+        impact: 60.0,
+        colour_density: 40.0,
+        ..Default::default()
+    };
+    styles.insert(3, soft);
     let mut dreamy = s("CineStill 800T · bloom", "cinestill-800t", "scan");
     dreamy.light.bloom = 0.15;
     dreamy.light.vignette = 0.5;
@@ -434,6 +482,7 @@ mod tests {
         assert_eq!(minimal.format_mm, 36.0);
         assert!(minimal.printing.stock_look);
         assert!(minimal.grain.is_film_grain());
+        assert!(minimal.compression.is_default());
     }
 
     #[test]

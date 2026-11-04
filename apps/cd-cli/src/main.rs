@@ -48,6 +48,9 @@ enum Command {
         /// Defringe edges, 0–100 (raw files).
         #[arg(long, default_value_t = 0.0)]
         defringe: f64,
+        /// Film compression impact, 0–100.
+        #[arg(long)]
+        compression: Option<f64>,
         /// Multiplier on the film's interlayer effect.
         #[arg(long)]
         interlayer: Option<f64>,
@@ -153,6 +156,7 @@ fn run() -> Result<(), String> {
             edge,
             exposure,
             defringe,
+            compression,
             interlayer,
             original,
             out,
@@ -166,6 +170,9 @@ fn run() -> Result<(), String> {
             }
             if let Some(ev) = ev {
                 s.ev_compensation = ev;
+            }
+            if let Some(c) = compression {
+                s.compression.impact = c;
             }
             if let Some(k) = interlayer {
                 s.interlayer = k;

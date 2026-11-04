@@ -19,6 +19,9 @@ All notable changes to this project are recorded here. The format follows
 - **Desktop app** (`colour-darkroom`), adapted from BW Darkroom: folder tree, style
   previews, comparison and 1:1 detail views, Develop panel (Image, Film, Light, Grain,
   Print), styles, export to 16-bit TIFF/PNG or JPEG with EXIF and a JSON recipe.
+- **Film compression**: rolls highlights off towards the mid-tones before the film, with
+  Impact, Tonal range, White point and Colour density, and a curve of what it does. New
+  built-in style *Portra 400 · film compression*; `colour render --compression`.
 - **Defringe** (Image section): removes the coloured fringes lens chromatic aberration leaves
   along bright, high-contrast edges, before the film exaggerates them.
 - **Command line** (`colour`): `styles`, `render` and `sheet` (every style on one sheet);

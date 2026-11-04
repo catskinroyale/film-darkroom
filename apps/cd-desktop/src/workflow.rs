@@ -16,6 +16,12 @@ mod help {
     pub const EV: &str = "Under- or over-exposes the film in stops. The lab still prints mid-grey as mid-grey, so for\nnegatives this changes character, not brightness: +1 is the classic richer, cleaner overexposed\nnegative; −2 is thin, muddy and grainy. Slides simply get lighter or darker.";
     pub const INTERLAYER: &str = "Strength of the film's interlayer (DIR coupler) effects: how much each colour layer\nholds back the others. More gives purer, more saturated colour; neutrals never change.";
     pub const CURVES: &str = "Net density of each dye layer against log exposure (0 = the metered mid-grey).\nRed, green and blue lines are the cyan, magenta and yellow dye layers.";
+    pub const COMPRESSION: &str = "Film compression: rolls the photo's highlights off towards the mid-tones, the way a negative\nkeeps absorbing light where a sensor clips. Gives a softer, more analogue highlight range.";
+    pub const IMPACT: &str = "How strongly highlights are pulled towards the mid-tones. 0 is off.";
+    pub const TONAL_RANGE: &str = "How far down the tones compression reaches: low values touch only the brightest highlights,\n100 reaches almost to the deep shadows.";
+    pub const WHITE_POINT: &str = "Top of the compressed range. Lower: more highlight contrast, clipping sooner.\nHigher: flatter, greyer highlights. 100 is neutral.";
+    pub const COLOUR_DENSITY: &str = "Saturation of the compressed highlights. 0 fades them towards neutral, like colour negative;\n100 keeps their colour, like slide film.";
+    pub const COMPRESSION_CURVE: &str = "Scene stops in (across) against stops out (up), 0 = mid-grey.\nThe diagonal is no change; the line bends where highlights are compressed.";
     pub const HALATION: &str = "Light reflected from the film base back into the emulsion: a red-orange glow round\nbright lights. ×1 is the film's own (faint with an anti-halation backing, strong without).";
     pub const HALATION_SIZE: &str = "Spread of the halation glow, relative to the film's own.";
     pub const BLOOM: &str =
@@ -109,10 +115,11 @@ fn randomise_grain(s: &mut Style) {
 }
 
 /// Section and expandable-row keys, in panel order (for "Edit…", which opens them all).
-pub const SECTION_KEYS: [&str; 7] = [
+pub const SECTION_KEYS: [&str; 8] = [
     "film",
     "film.details",
     "film.curve",
+    "compression",
     "light",
     "grain",
     "print",
@@ -261,6 +268,103 @@ pub fn film_section(ui: &mut egui::Ui, s: &mut Style, summary: Option<&ModelSumm
         Icon::Curve,
         |ui| inset(ui, |ui| model_panel(ui, summary)),
     );
+}
+
+/// Film compression: the highlights rolled off before the film.
+pub fn compression_section(ui: &mut egui::Ui, s: &mut Style) {
+    widgets::note(
+        ui,
+        "Rolls highlights off towards the mid-tones, as film does.",
+        help::COMPRESSION,
+    );
+    let c = &mut s.compression;
+    let on = c.impact > 0.0;
+    widgets::slider(
+        ui,
+        &spec(
+            "compression.impact",
+            "Impact",
+            help::IMPACT,
+            (0.0, 100.0, 0.0, 1.0),
+            0,
+            "",
+        ),
+        &mut c.impact,
+        true,
+    );
+    widgets::slider(
+        ui,
+        &spec(
+            "compression.tonal_range",
+            "Tonal range",
+            help::TONAL_RANGE,
+            (0.0, 100.0, 50.0, 1.0),
+            0,
+            "",
+        ),
+        &mut c.tonal_range,
+        on,
+    );
+    widgets::slider(
+        ui,
+        &spec(
+            "compression.white_point",
+            "White point",
+            help::WHITE_POINT,
+            (50.0, 120.0, 100.0, 1.0),
+            0,
+            "",
+        ),
+        &mut c.white_point,
+        on,
+    );
+    widgets::slider(
+        ui,
+        &spec(
+            "compression.colour_density",
+            "Colour density",
+            help::COLOUR_DENSITY,
+            (0.0, 100.0, 100.0, 1.0),
+            0,
+            "",
+        ),
+        &mut c.colour_density,
+        on,
+    );
+    inset(ui, |ui| compression_plot(ui, &c.compression()));
+}
+
+/// Stops in against stops out, with the identity diagonal.
+fn compression_plot(ui: &mut egui::Ui, c: &cd_profiles::Compression) {
+    let width = ui.available_width().min(320.0);
+    let (response, painter) = ui.allocate_painter(Vec2::new(width, 110.0), Sense::hover());
+    let rect = response.rect.shrink(4.0);
+    let (lo, hi) = (-6.0, 8.0);
+    let to_screen = |u: f64, v: f64| {
+        Pos2::new(
+            rect.min.x + ((u - lo) / (hi - lo)) as f32 * rect.width(),
+            rect.max.y - ((v.clamp(lo, hi) - lo) / (hi - lo)) as f32 * rect.height(),
+        )
+    };
+    let grid = Stroke::new(0.5, ui.visuals().weak_text_color().gamma_multiply(0.5));
+    for k in [-4.0, -2.0, 0.0, 2.0, 4.0, 6.0] {
+        painter.line_segment([to_screen(k, lo), to_screen(k, hi)], grid);
+        painter.line_segment([to_screen(lo, k), to_screen(hi, k)], grid);
+    }
+    painter.line_segment(
+        [to_screen(lo, lo), to_screen(hi, hi)],
+        Stroke::new(1.0, ui.visuals().weak_text_color()),
+    );
+    let points: Vec<Pos2> = c
+        .curve(lo, hi, 113)
+        .into_iter()
+        .map(|(u, v)| to_screen(u, v))
+        .collect();
+    painter.add(egui::Shape::line(
+        points,
+        Stroke::new(1.8, ui.visuals().strong_text_color()),
+    ));
+    response.on_hover_text(help::COMPRESSION_CURVE);
 }
 
 /// Light: halation, bloom and vignette.

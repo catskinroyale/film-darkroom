@@ -1,7 +1,7 @@
 //! Colour film simulation (design 0001).
 //!
 //! ```text
-//! SceneImage ─► layer exposures (spectral sensitivity) ─► vignette, bloom, halation (light)
+//! SceneImage ─► film compression (highlights) ─► layer exposures (spectral sensitivity) ─► vignette, bloom, halation (light)
 //!            ─► log ─► per-layer characteristic curves ─► interlayer + edge effects (density)
 //!            ─► grain ─► negative ─► printer lights (timed to grey) ─► print curves ─► dyes
 //!            ─► display-linear Rec.709
@@ -12,7 +12,10 @@
 //! Exposure is relative: 1.0 is the metered mid-grey (scene value 0.18) and log
 //! exposure `x = log10(H)` is 0 there. Densities are net of base + fog unless stated.
 
+pub mod compression;
 pub mod stock;
+
+pub use compression::Compression;
 
 pub use stock::{
     FilmKind, FilmStock, Grain, Halation, Layer, PrintKind, PrintStock, film_stock, film_stocks,
@@ -127,6 +130,8 @@ pub struct RenderOptions {
     pub push: f64,
     /// Multiplier on the film's interlayer (colour saturation) effect.
     pub interlayer: f64,
+    /// Highlight compression of the scene before the film.
+    pub compression: Compression,
     pub grain: GrainAdjust,
     pub light: LightEffects,
     pub printing: Printing,
@@ -348,7 +353,9 @@ fn colour_points(stock: &FilmStock, printing: &Printing) -> [f64; 3] {
 
 /// Layer exposures relative to the metered grey, with vignette, bloom and halation.
 pub fn expose(scene: &SceneImage, stock: &FilmStock, opts: &RenderOptions) -> [Plane; 3] {
-    let [r, g, b] = scene.to_rgb();
+    let mut rgb = scene.to_rgb();
+    opts.compression.apply(&mut rgb);
+    let [r, g, b] = rgb;
     let s = stock.sensitivity;
     let gain = (2f64.powf(opts.ev_compensation) / GREY) as f32;
     // Slides take colour-compensating filters on the camera instead of printer lights.
@@ -738,6 +745,7 @@ mod tests {
             ev_compensation: 0.0,
             push: 0.0,
             interlayer: 1.0,
+            compression: Compression::default(),
             grain: GrainAdjust {
                 amount: 0.0,
                 ..Default::default()
@@ -865,6 +873,34 @@ mod tests {
         // Two stops of scene stay about two stops on a scan; print film is contrastier.
         let (scan, cine) = (span("scan"), span("2383"));
         assert!(scan > 1.9 && cine > scan * 1.15, "scan {scan}, 2383 {cine}");
+    }
+
+    #[test]
+    fn compression_keeps_highlight_detail_that_would_otherwise_clip() {
+        let stock = film_stock("portra-400").unwrap();
+        let print = print_stock("2383").unwrap();
+        let mut o = options(8, 8);
+        // Two highlights a stop apart, six and seven stops over grey.
+        let pair = |o: &RenderOptions| {
+            let a = centre(&render(&patch([0.18 * 64.0; 3]), &stock, &print, o))[1];
+            let b = centre(&render(&patch([0.18 * 128.0; 3]), &stock, &print, o))[1];
+            (a, b)
+        };
+        let (a, b) = pair(&o);
+        o.compression = Compression {
+            impact: 80.0,
+            ..Default::default()
+        };
+        let (ca, cb) = pair(&o);
+        assert!(
+            cb - ca > (b - a) * 1.5,
+            "separation {} → {}",
+            b - a,
+            cb - ca
+        );
+        assert!(ca < a, "compressed highlights sit lower");
+        let grey = centre(&render(&patch([0.18; 3]), &stock, &print, &o));
+        assert!((grey[0] - grey[2]).abs() < 0.004, "still neutral: {grey:?}");
     }
 
     #[test]
