@@ -1,0 +1,14 @@
+[package]
+name = "cd-profiles"
+description = "Styles: serialisable compositions of film stock, processing, light effects, grain and print."
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+cd-core = { path = "../cd-core" }
+cd-film = { path = "../cd-film" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror.workspace = true

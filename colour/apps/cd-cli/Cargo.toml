@@ -1,0 +1,19 @@
+[package]
+name = "cd-cli"
+description = "Command-line front end for the colour film emulation engine."
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "colour"
+path = "src/main.rs"
+
+[dependencies]
+cd-core = { path = "../../crates/cd-core" }
+cd-io = { path = "../../crates/cd-io" }
+cd-raw = { path = "../../crates/cd-raw" }
+cd-profiles = { path = "../../crates/cd-profiles" }
+clap = { version = "4", features = ["derive"] }
+rayon.workspace = true

@@ -1,0 +1,7 @@
+target/
+*.tif
+*.tiff
+!data/**/*.tif
+out/
+dist/
+__pycache__/
