@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """List the third-party crates compiled into the desktop app, with their licences.
 
-Writes apps/bw-desktop/assets/third-party-licenses.json, which the About dialog shows.
-Only normal (shipped) dependencies of bw-desktop for the packaging target are listed;
+Writes apps/fd-desktop/assets/third-party-licenses.json, which the About dialog shows.
+Only normal (shipped) dependencies of fd-desktop for the packaging target are listed;
 build-time and test-only crates are not part of the app. Re-run after changing
 dependencies (tools/package-macos.sh runs it automatically).
 
@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-OUT = ROOT / "apps/bw-desktop/assets/third-party-licenses.json"
+OUT = ROOT / "apps/fd-desktop/assets/third-party-licenses.json"
 
 
 def main() -> int:
@@ -25,7 +25,7 @@ def main() -> int:
     packages = {p["id"]: p for p in meta["packages"]}
     nodes = {n["id"]: n for n in meta["resolve"]["nodes"]}
     workspace = set(meta["workspace_members"])
-    root = next(p["id"] for p in meta["packages"] if p["name"] == "bw-desktop")
+    root = next(p["id"] for p in meta["packages"] if p["name"] == "fd-desktop")
 
     seen, stack = set(), [root]
     while stack:

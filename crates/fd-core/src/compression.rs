@@ -1,5 +1,5 @@
 //! Film compression: fit a digital photo's highlights into the range film records, before
-//! the film sees it (colour design C10). Shared by both processes; black and white uses
+//! the film sees it (design 0003 C10). Shared by both processes; black and white uses
 //! the luminance curve only (colour density has no meaning there).
 //!
 //! A sensor clips abruptly; a negative keeps absorbing light and rolls highlights off over

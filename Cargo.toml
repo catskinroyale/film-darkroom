@@ -5,7 +5,7 @@ members = ["crates/*", "apps/*"]
 [workspace.package]
 edition = "2024"
 version = "0.11.1"
-# Default for every crate: Apache-2.0 (engine crates, apps, plugins). bw-core is MIT and
+# Default for every crate: Apache-2.0 (engine crates, apps, plugins). fd-core is MIT and
 # sets its own licence. See README "Licensing".
 license = "Apache-2.0"
 rust-version = "1.99"

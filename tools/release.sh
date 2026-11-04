@@ -40,7 +40,7 @@ else: patch += 1
 new = f"{major}.{minor}.{patch}"
 
 log = open("CHANGELOG.md").read()
-section = re.search(r"## \[Unreleased\]\n(.*?)(?=\n## \[)", log, re.S)
+section = re.search(r"## \[Unreleased\]\n(.*?)(?=\n## \[|\n\[Unreleased\]:|\Z)", log, re.S)
 if not section or not section.group(1).strip():
     sys.exit("error: CHANGELOG.md has nothing under [Unreleased]")
 today = datetime.date.today().isoformat()
@@ -48,15 +48,18 @@ log = log.replace("## [Unreleased]\n", f"## [Unreleased]\n\n## [{new}] - {today}
 
 # Comparison links: [Unreleased] now starts at the new tag; the new version runs from
 # the previous tag (or the commit the previous link pointed at, before tags existed).
-repo = "https://github.com/catskinroyale/bnw-darkroom"
+repo = "https://github.com/catskinroyale/film-darkroom"
 has_old_tag = subprocess.run(["git", "rev-parse", "-q", "--verify", f"refs/tags/v{old}"],
                              capture_output=True).returncode == 0
 prev = f"v{old}"
 if not has_old_tag:
     link = re.search(rf"^\[{re.escape(old)}\]: \S*?/(?:commit/|compare/\S*?\.\.\.)(\S+)$", log, re.M)
     prev = link.group(1) if link else prev
+# The first release has nothing to compare with: link to its tag instead.
+first = not has_old_tag and not re.search(rf"^\[{re.escape(old)}\]: ", log, re.M)
+new_link = f"{repo}/releases/tag/v{new}" if first else f"{repo}/compare/{prev}...v{new}"
 log = re.sub(r"^\[Unreleased\]: .*$", f"[Unreleased]: {repo}/compare/v{new}...HEAD\n"
-             f"[{new}]: {repo}/compare/{prev}...v{new}", log, count=1, flags=re.M)
+             f"[{new}]: {new_link}", log, count=1, flags=re.M)
 
 cargo = cargo[:m.start()] + f"{m.group(1)}{new}{m.group(5)}" + cargo[m.end():]
 print(f"{old} -> {new} ({bump}); changes since {prev}:")
@@ -75,5 +78,5 @@ cargo update --workspace --quiet          # refresh workspace versions in Cargo.
 git add Cargo.toml Cargo.lock CHANGELOG.md
 git commit --quiet -m "Release v$NEW"
 NOTES=$(sed -n "/^## \[$NEW\]/,/^## \[/p" CHANGELOG.md | sed '1d;$d')
-git tag -a --cleanup=whitespace "v$NEW" -m "BW Darkroom $NEW" -m "$NOTES"
+git tag -a --cleanup=whitespace "v$NEW" -m "Film Darkroom $NEW" -m "$NOTES"
 echo "Tagged v$NEW. Push with: git push && git push origin v$NEW"

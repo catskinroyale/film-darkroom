@@ -1,10 +1,13 @@
-# Design 0001: the colour film model
+# Design 0003: the colour film model
 
 Status: implemented (first version, unreleased). All film and print parameters are **illustrative**.
 
-Colour Darkroom follows BW Darkroom's approach: the photographic chain is modelled as
-separate, physically motivated stages that meet through a simulated negative, rather than as
-a colour grade or LUT. Each control maps onto something that happens to film.
+Written for Colour Darkroom, now Film Darkroom's colour process (`crates/colour-film`,
+`fd_profiles::colour`; see [design 0004](0004-one-app-two-processes.md)). It follows the
+black-and-white model's approach ([design 0001](0001-negative-simulation-model.md)): the
+photographic chain is modelled as separate, physically motivated stages that meet through
+a simulated negative, rather than as a colour grade or LUT. Each control maps onto
+something that happens to film.
 
 ## 1. Pipeline
 
@@ -43,14 +46,14 @@ Reversal (slide) film skips the print: its own falling curve and dyes are viewed
 | C4 | **One curve shape everywhere: soft toe, straight line, smooth shoulder.** | Negatives, prints and slides all use it (slides as a falling curve). A logistic was tried for prints and slides first, but it put mid-grey on its soft lower half, so every print rendered at roughly the same contrast whatever its gamma. |
 | C5 | **The lab times every print to grey.** | Printer lights are solved so the metered grey prints as a neutral 18 % on every film × print pair (tested). So film exposure (EV) changes the negative's character (overexposure: denser, cleaner, more saturated; underexposure: thin and muddy), not the print's brightness, as with real lab prints. Print exposure and printer points sit on top, in the lab's units (1 point = 0.025 log E). |
 | C6 | **Stock looks as printer points.** | Each stock carries `look_points`: the lab rendering it is known for (Gold's warmth, 400H's cool cast). It is a separate, switchable layer ("Film's lab look"), so the strictly neutral print is always available. |
-| C7 | **Grain is BW Darkroom's Selwyn model per layer.** | σ²(D) ∝ granularity area × D / pixel area, keyed on full-frame pixel coordinates, so the 1:1 detail view's grain matches the export. The blue-sensitive (fast) layer is grainiest. |
+| C7 | **Grain is the black-and-white model's Selwyn model, per layer.** | σ²(D) ∝ granularity area × D / pixel area, keyed on full-frame pixel coordinates, so the 1:1 detail view's grain matches the export. The blue-sensitive (fast) layer is grainiest. |
 | C8 | **The neutral scan is a print with ideal dyes.** | Scanning is modelled as printing onto a virtual stock with no dye crosstalk and a gentle curve, so it shares timing and printer lights with real prints. |
-| C10 | **Film compression is a creative, scene-referred stage before the film**, after Dehancer's tool of that name. On luminance stops around grey: a soft knee placed by *Tonal range*, a slope above it lowered by *Impact* (down to 0.25), the compressed part stretched or squeezed by *White point* (50–120), and *Colour density* fading compressed highlights towards neutral. Colour ratios are kept otherwise; off by default. | Digital highlights clip where a negative keeps absorbing light. The film's own shoulder still applies afterwards; compression lets a photo's highlights reach it gently, as heavy overexposure on negative does, and recovers window views and skies. It is labelled a creative control, not a physical layer. |
-| C9 | **Push/pull change development only**, as in BW Darkroom. | Your photo is already exposed. A push raises contrast (~12 %/stop), shadow speed and grain for negatives; slides gain about a stop per stop. |
+| C9 | **Push/pull change development only**, as in black and white. | Your photo is already exposed. A push raises contrast (~12 %/stop), shadow speed and grain for negatives; slides gain about a stop per stop. |
+| C10 | **Film compression is a creative, scene-referred stage before the film**, after Dehancer's tool of that name. Since design 0004 it lives in `fd-core` and black and white uses it too (luminance only). On luminance stops around grey: a soft knee placed by *Tonal range*, a slope above it lowered by *Impact* (down to 0.25), the compressed part stretched or squeezed by *White point* (50–120), and *Colour density* fading compressed highlights towards neutral. Colour ratios are kept otherwise; off by default. | Digital highlights clip where a negative keeps absorbing light. The film's own shoulder still applies afterwards; compression lets a photo's highlights reach it gently, as heavy overexposure on negative does, and recovers window views and skies. It is labelled a creative control, not a physical layer. |
 
 ## 3. What is illustrative
 
-Everything in `crates/cd-film/src/stock.rs`: sensitivities, gammas, toes, base densities,
+Everything in `crates/colour-film/src/stock.rs`: sensitivities, gammas, toes, base densities,
 interlayer strengths, granularity, halation, dye matrices and look points. They were chosen
 to give each stock the character photographers describe for it and checked by eye on raw
 files; none is fitted to a datasheet. The model is structured so measured data can replace
@@ -58,7 +61,7 @@ them stock by stock without changing the pipeline.
 
 ## 4. Calibration path (next)
 
-As BW Darkroom's design 0002 did for black-and-white:
+As [design 0002](0002-datasheet-calibration-and-paper.md) did for black and white:
 
 1. **Negative curves**: Kodak's Portra, Ektar, Gold, UltraMax and Vision3 datasheets publish
    per-layer characteristic curves (status M density vs log H) and spectral sensitivity

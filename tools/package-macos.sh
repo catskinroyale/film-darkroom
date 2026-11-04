@@ -1,7 +1,7 @@
 #!/bin/bash
-# Build "BW Darkroom.app" and a drag-to-Applications DMG for macOS (Apple Silicon).
+# Build "Film Darkroom.app" and a drag-to-Applications DMG for macOS (Apple Silicon).
 #
-#   tools/package-macos.sh            → dist/BW Darkroom.app, dist/BW-Darkroom-<version>-arm64.dmg
+#   tools/package-macos.sh            → dist/Film Darkroom.app, dist/Film-Darkroom-<version>-arm64.dmg
 #
 # Uses only tools that ship with macOS (sips, iconutil, codesign, hdiutil). The app is
 # ad-hoc signed, not signed with a Developer ID or notarised: on another Mac, open it
@@ -12,21 +12,21 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 ROOT=$(pwd)
-APP_NAME="BW Darkroom"
-BIN=mono-darkroom
-BUNDLE_ID="io.github.catskinroyale.bwdarkroom"
+APP_NAME="Film Darkroom"
+BIN=film-darkroom
+BUNDLE_ID="io.github.catskinroyale.filmdarkroom"
 VERSION=$(sed -n '/^\[workspace.package\]/,/^\[/{s/^version *= *"\(.*\)"/\1/p;}' Cargo.toml)
 ARCH=$(uname -m)
 DIST="$ROOT/dist"
 APP="$DIST/$APP_NAME.app"
-DMG="$DIST/BW-Darkroom-$VERSION-$ARCH.dmg"
+DMG="$DIST/Film-Darkroom-$VERSION-$ARCH.dmg"
 SIGN_IDENTITY="${SIGN_IDENTITY:--}"
 
 echo "==> Listing third-party licences for the About window"
 python3 -I tools/gen_licenses.py
 
 echo "==> Building $APP_NAME $VERSION ($ARCH)"
-cargo build --profile dist -p bw-desktop
+cargo build --profile dist -p fd-desktop
 
 echo "==> Assembling $APP"
 rm -rf "$APP" "$DMG"

@@ -2,6 +2,12 @@
 
 Status: **Draft for review** · Date: 2026-10-20 · Scope: Phase 1 (mathematical model) and the shape of Phase 2 (Rust core)
 
+> **Crate names (2026-11-04):** this document predates Film Darkroom
+> ([design 0004](0004-one-app-two-processes.md)). `bw-film`, `bw-developer`,
+> `bw-negative` and `bw-darkroom` are now `mono-film`, `mono-developer`, `mono-negative`
+> and `mono-darkroom`; `bw-core`, `bw-io` and `bw-raw` became the shared `fd-core`, `fd-io`
+> and `fd-raw`; `bw-profiles` is `fd_profiles::mono`; `bw-cli` is `film` (`fd-cli`).
+
 > **Amended by [design 0002](0002-datasheet-calibration-and-paper.md) (2026-10-24):** the
 > development family gains a speed shift (D12, §3.3), the push expectation in §8.2 becomes
 > "about one stop", and the minimal paper of §9.1 is replaced by a measured grade family.

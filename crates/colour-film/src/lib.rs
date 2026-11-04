@@ -1,4 +1,4 @@
-//! Colour film simulation (design 0001).
+//! Colour film simulation (design 0003).
 //!
 //! ```text
 //! SceneImage ─► film compression (highlights) ─► layer exposures (spectral sensitivity) ─► vignette, bloom, halation (light)
@@ -547,7 +547,7 @@ pub fn grain_area_um2(rms: f64) -> f64 {
     sigma * sigma * std::f64::consts::PI * 24.0 * 24.0 / 0.434
 }
 
-/// Selwyn grain in density: per-pixel σ² = 0.434 · a · D / pixel area (BW Darkroom's
+/// Selwyn grain in density: per-pixel σ² = 0.434 · a · D / pixel area (the black-and-white model's
 /// model), one independent dye-cloud field per layer.
 fn apply_grain(net: &mut Plane, rms: f64, clump_um: f64, opts: &RenderOptions, layer: u32) {
     let adjust = &opts.grain;

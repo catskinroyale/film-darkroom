@@ -6,7 +6,7 @@
 //! so results do not depend on the number of threads.
 //!
 //! Borders replicate the edge pixel. A stage's [`halo_radius`] is the number of
-//! pixels beyond a tile it reads, which tiled execution must provide (mono design 0001 §4).
+//! pixels beyond a tile it reads, which tiled execution must provide (design 0001 §4).
 
 use crate::plane::Plane;
 use rayon::prelude::*;
@@ -43,7 +43,7 @@ pub fn gaussian_kernel(sigma_px: f64) -> Vec<f32> {
 ///
 /// Filtering unit-variance white noise with a normalised kernel scales the per-pixel
 /// variance by this factor while leaving large-aperture variance unchanged. The grain
-/// model (mono design 0001 §5.3) relies on this property.
+/// model (design 0001 §5.3) relies on this property.
 pub fn variance_factor_2d(sigma_px: f64) -> f64 {
     let k1: f64 = gaussian_kernel(sigma_px)
         .iter()

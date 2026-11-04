@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Draw the BW Darkroom app icon (1024 x 1024 PNG) with no dependencies.
+"""Draw the Film Darkroom app icon (1024 x 1024 PNG) with no dependencies.
 
-A 21-step grey wedge, like a sensitometric step tablet, inside a circle on a dark
-rounded square. Usage: python3 -I tools/make_icon.py packaging/macos/icon_1024.png
+Three overlapping dye discs (cyan, magenta, yellow), like the dye layers of colour film,
+over white inside a ringed circle on a dark rounded square. The right half of the circle
+shows the same discs in black and white: one picture, either process.
+Usage: python3 -I tools/make_icon.py packaging/macos/icon_1024.png
 """
 import math
 import struct
@@ -26,6 +28,15 @@ def coverage(d):
     return max(0.0, min(1.0, 0.5 - d))
 
 
+# Disc radius, and each disc's centre offset and absorption of R, G, B (cyan, magenta, yellow).
+DISC = 175
+DYES = [
+    (0, -105, (0.92, 0.18, 0.05)),
+    (-92, 55, (0.10, 0.90, 0.25)),
+    (92, 55, (0.02, 0.10, 0.92)),
+]
+
+
 def main(path):
     margin, radius_corner = 100, 185
     cx = cy = N / 2
@@ -41,16 +52,23 @@ def main(path):
             r = math.hypot(x + 0.5 - cx, y + 0.5 - cy)
             # background: near-black with a faint vertical gradient
             v = 22 + 18 * (1 - y / N)
-            # step wedge clipped to the circle, 21 steps left (white) to right (black)
+            # subtractive dye discs over white, clipped to the circle
             inside = coverage(r - (r_outer - ring))
-            step = min(20, max(0, int((x - (cx - r_outer)) / (2 * r_outer) * 21)))
-            wedge = 255 * (1 - step / 20) ** 2.2 ** 0.5
-            v = v * (1 - inside) + wedge * inside
-            # thin light ring around the wedge
+            t = [1.0, 1.0, 1.0]
+            for k, (dx, dy, absorb) in enumerate(DYES):
+                d = coverage(math.hypot(x + 0.5 - cx - dx, y + 0.5 - cy - dy) - DISC)
+                for c in range(3):
+                    t[c] *= 1 - d * absorb[c]
+            # right half: the same discs as greys (Rec. 709 luminance)
+            mono = coverage(cx - (x + 0.5))
+            grey = 0.2126 * t[0] + 0.7152 * t[1] + 0.0722 * t[2]
+            t = [t[c] * (1 - mono) + grey * mono for c in range(3)]
+            rgb = [v * (1 - inside) + 255 * t[c] * inside for c in range(3)]
+            # thin light ring around the discs
             ring_a = coverage(abs(r - (r_outer - ring / 2)) - ring / 2)
-            v = v * (1 - ring_a) + 235 * ring_a
-            g = int(max(0, min(255, v)))
-            row += [g, g, g, int(255 * bg_a)]
+            rgb = [c * (1 - ring_a) + 235 * ring_a for c in rgb]
+            px = [int(max(0, min(255, c))) for c in rgb]
+            row += px + [int(255 * bg_a)]
         rows.append(row)
     png(path, rows)
 

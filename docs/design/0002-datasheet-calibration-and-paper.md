@@ -2,6 +2,12 @@
 
 Status: **Implemented (unreleased)** · Date: 2026-10-24 (§4–§8 added the same day) · Builds on [design 0001](0001-negative-simulation-model.md)
 
+> **Crate names (2026-11-04):** this document predates Film Darkroom
+> ([design 0004](0004-one-app-two-processes.md)). `bw-film`, `bw-developer`,
+> `bw-negative` and `bw-darkroom` are now `mono-film`, `mono-developer`, `mono-negative`
+> and `mono-darkroom`; `bw-core`, `bw-io` and `bw-raw` became the shared `fd-core`, `fd-io`
+> and `fd-raw`; `bw-profiles` is `fd_profiles::mono`; `bw-cli` is `film` (`fd-cli`).
+
 This note records how manufacturer curves are now read from datasheets, the first Level-2
 calibration (Tri-X 400 in D-76), a change to the development model that the data forced, and
 the replacement of the placeholder paper with a measured one. The approach was prompted by

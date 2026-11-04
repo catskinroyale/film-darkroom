@@ -13,7 +13,7 @@ use fd_core::{Plane, SceneImage};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-/// Film compression of the highlights before the film (colour design C10), for either
+/// Film compression of the highlights before the film (design 0003 C10), for either
 /// process. Black and white ignores `colour_density`.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default)]

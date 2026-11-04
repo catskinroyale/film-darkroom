@@ -7,7 +7,7 @@ spline, so the fit is exactly what the app renders:
 
     D(h, t) = D_base + f1·t + D∞(h + s·ln(t / t_ref)) · (1 − exp(−t / τc0))
 
-D∞ is a monotone Steffen spline (bw-core `MonotoneCurve`) on fixed knots, pinned to 0 at
+D∞ is a monotone Steffen spline (fd-core `MonotoneCurve`) on fixed knots, pinned to 0 at
 the lowest plotted exposure. `s` moves the curve to lower exposure as development
 lengthens (the speed gain every published family shows in its toe); `t_ref` is the
 manufacturer's normal time, where the shift is zero. Fog before development is taken as
@@ -49,7 +49,7 @@ KNOT_STEP = 0.2
 KNOT_MARGIN = 0.4
 
 
-# ----- the engine's spline (bw-core/src/curve.rs), ported exactly -------------------
+# ----- the engine's spline (fd-core/src/curve.rs), ported exactly -------------------
 
 
 def steffen_end_slope(d0, d1, h0, h1):

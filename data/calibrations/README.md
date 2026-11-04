@@ -1,7 +1,7 @@
 # Fitted calibrations
 
 Level-2 development calibrations, fitted to manufacturer sensitometry and compiled into
-`bw-negative` (`fitted.rs`). Each file is written by `tools/fit_development.py`; its header
+`mono-negative` (`fitted.rs`). Each file is written by `tools/fit_development.py`; its header
 states the model. Design 0002 §2 gives the method and the validation.
 
 | File | Film + developer | Fitted to |

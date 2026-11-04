@@ -322,7 +322,7 @@ mod tests {
     fn works_without_source_exif() {
         let m = ExportMetadata {
             exif: None,
-            software: "Colour Darkroom".into(),
+            software: "Film Darkroom".into(),
             comment: None,
         };
         let parsed = parse(m.exif_block(10, 10).unwrap());

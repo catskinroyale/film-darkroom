@@ -178,7 +178,7 @@ fn default_format() -> f64 {
     36.0
 }
 
-/// How visible the grain will be, on the same scale as BW Darkroom.
+/// How visible the grain will be, on the same scale as black and white.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct GrainReadout {
     /// Diffuse RMS granularity ×1000 at net density 1.0 (green layer), after processing.

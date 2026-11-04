@@ -5,6 +5,44 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+Film Darkroom: BW Darkroom and Colour Darkroom in one app and one code base. Black and
+white continues from BW Darkroom 0.11.1; colour arrives from Colour Darkroom (unreleased).
+
+### Added
+- **Colour and black and white in one app.** A **Colour | B&W** switch in the top bar (or
+  **M**) chooses the process: the style list, the column of previews and the Develop
+  panel follow it. Each process keeps its style and unsaved edits while the other is
+  shown, and the last style of each is remembered.
+- **Colour film** (from Colour Darkroom; all stocks illustrative): three dye layers with
+  spectral sensitivity, per-layer curves, interimage effects that saturate colour without
+  tinting greys, edge effects, per-layer grain, halation, bloom and vignette; a lab that
+  times every print to grey, with print exposure, printer points and each film's lab look.
+  Portra 160/400/800, Ektar 100, Gold 200, UltraMax 400, Pro 400H, Superia 400,
+  Vision3 250D/500T, CineStill 800T; Ektachrome E100, Velvia 50, Provia 100F slides;
+  neutral scan, Endura and Crystal Archive paper, 2383 and 3513 print film.
+- **Film compression**, for both processes: rolls highlights off towards the mid-tones
+  before the film, with Impact, Tonal range, White point (and, in colour, Colour density)
+  and a curve of what it does. Off by default. New built-in style *Portra 400 · film
+  compression*.
+- **Defringe** (Image section): removes the coloured fringes lens chromatic aberration
+  leaves along bright, high-contrast edges.
+- **`{print}` export token**: the paper, print stock, scan, or "slide". `{developer}`
+  gives C-41, ECN-2 or E-6 for colour.
+- **One command-line tool, `film`**: `styles`, `render` (any style; `--film`, `--print`,
+  `--push`, `--ev`, `--compression`, plus `--developer` and `--grade` for black and white
+  and `--interlayer` for colour), `sheet` (`--process mono|colour`) and `variations`.
+
+### Changed
+- **New name and home**: the app is Film Darkroom (`film-darkroom`), from
+  github.com/catskinroyale/film-darkroom. Styles are kept in
+  `film-darkroom/styles.json`, per-photo adjustments in `<photo>.fd.json`, and exports go
+  to `film-exports`.
+- **Your BW Darkroom and Colour Darkroom work carries over.** Until Film Darkroom saves
+  styles of its own, it starts with your styles from both apps; a photo without a
+  `.fd.json` opens with its `.bw.json` or `.cd.json` adjustments. Neither app's files are
+  ever changed, so both keep working.
+- The `bw` and `colour` command-line tools are replaced by `film`.
+
 ## [0.11.1] - 2026-10-26
 
 ### Fixed
@@ -392,21 +430,21 @@ All notable changes to this project are recorded here. The format follows
   workflow views with hover help, push/pull in stops, grain from format and enlargement,
   1:1 detail view, full-resolution TIFF export.
 
-[Unreleased]: https://github.com/catskinroyale/bnw-darkroom/compare/v0.11.1...HEAD
-[0.11.1]: https://github.com/catskinroyale/bnw-darkroom/compare/v0.11.0...v0.11.1
-[0.11.0]: https://github.com/catskinroyale/bnw-darkroom/compare/v0.10.0...v0.11.0
-[0.10.0]: https://github.com/catskinroyale/bnw-darkroom/compare/v0.9.0...v0.10.0
-[0.9.0]: https://github.com/catskinroyale/bnw-darkroom/compare/v0.8.0...v0.9.0
-[0.8.0]: https://github.com/catskinroyale/bnw-darkroom/compare/v0.7.1...v0.8.0
-[0.7.1]: https://github.com/catskinroyale/bnw-darkroom/compare/v0.7.0...v0.7.1
-[0.7.0]: https://github.com/catskinroyale/bnw-darkroom/compare/v0.6.2...v0.7.0
-[0.6.2]: https://github.com/catskinroyale/bnw-darkroom/compare/v0.6.1...v0.6.2
-[0.6.1]: https://github.com/catskinroyale/bnw-darkroom/compare/v0.6.0...v0.6.1
-[0.6.0]: https://github.com/catskinroyale/bnw-darkroom/compare/v0.5.0...v0.6.0
-[0.5.0]: https://github.com/catskinroyale/bnw-darkroom/compare/v0.4.1...v0.5.0
-[0.4.1]: https://github.com/catskinroyale/bnw-darkroom/compare/v0.4.0...v0.4.1
-[0.4.0]: https://github.com/catskinroyale/bnw-darkroom/compare/v0.3.1...v0.4.0
-[0.3.1]: https://github.com/catskinroyale/bnw-darkroom/compare/v0.3.0...v0.3.1
-[0.3.0]: https://github.com/catskinroyale/bnw-darkroom/compare/v0.2.0...v0.3.0
-[0.2.0]: https://github.com/catskinroyale/bnw-darkroom/compare/49d00c7...v0.2.0
-[0.1.0]: https://github.com/catskinroyale/bnw-darkroom/commit/49d00c7
+[Unreleased]: https://github.com/catskinroyale/film-darkroom/compare/v0.11.1...HEAD
+[0.11.1]: https://github.com/catskinroyale/film-darkroom/compare/v0.11.0...v0.11.1
+[0.11.0]: https://github.com/catskinroyale/film-darkroom/compare/v0.10.0...v0.11.0
+[0.10.0]: https://github.com/catskinroyale/film-darkroom/compare/v0.9.0...v0.10.0
+[0.9.0]: https://github.com/catskinroyale/film-darkroom/compare/v0.8.0...v0.9.0
+[0.8.0]: https://github.com/catskinroyale/film-darkroom/compare/v0.7.1...v0.8.0
+[0.7.1]: https://github.com/catskinroyale/film-darkroom/compare/v0.7.0...v0.7.1
+[0.7.0]: https://github.com/catskinroyale/film-darkroom/compare/v0.6.2...v0.7.0
+[0.6.2]: https://github.com/catskinroyale/film-darkroom/compare/v0.6.1...v0.6.2
+[0.6.1]: https://github.com/catskinroyale/film-darkroom/compare/v0.6.0...v0.6.1
+[0.6.0]: https://github.com/catskinroyale/film-darkroom/compare/v0.5.0...v0.6.0
+[0.5.0]: https://github.com/catskinroyale/film-darkroom/compare/v0.4.1...v0.5.0
+[0.4.1]: https://github.com/catskinroyale/film-darkroom/compare/v0.4.0...v0.4.1
+[0.4.0]: https://github.com/catskinroyale/film-darkroom/compare/v0.3.1...v0.4.0
+[0.3.1]: https://github.com/catskinroyale/film-darkroom/compare/v0.3.0...v0.3.1
+[0.3.0]: https://github.com/catskinroyale/film-darkroom/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/catskinroyale/film-darkroom/compare/49d00c7...v0.2.0
+[0.1.0]: https://github.com/catskinroyale/film-darkroom/commit/49d00c7

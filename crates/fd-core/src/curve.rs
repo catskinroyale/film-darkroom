@@ -164,7 +164,7 @@ fn steffen_end_slope(d0: f64, d1: f64, h0: f64, h1: f64) -> f64 {
 /// Uniformly sampled lookup table with linear interpolation.
 ///
 /// Inputs outside `[lo, hi]` clamp to the end values. Callers choose a range that
-/// covers every input the stage can produce (mono design 0001 uses `log H ∈ [−5, +2]`),
+/// covers every input the stage can produce (design 0001 uses `log H ∈ [−5, +2]`),
 /// so clamping only guards against pathological values.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Lut1D {

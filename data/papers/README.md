@@ -1,6 +1,6 @@
 # Papers
 
-Printing papers compiled into `bw-darkroom`: one characteristic curve per variable-contrast
+Printing papers compiled into `mono-darkroom`: one characteristic curve per variable-contrast
 filter grade, from the manufacturer's datasheet (design 0002 §3). Written by
 `tools/paper_family.py`; columns `filter,log_h,density`.
 

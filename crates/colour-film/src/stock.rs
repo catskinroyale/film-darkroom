@@ -3,8 +3,8 @@
 //! **Every value here is illustrative.** The parameters were chosen to give each stock the
 //! character photographers describe for the product it is named after (contrast, colour
 //! saturation, grain, halation, warmth); none is fitted to a manufacturer's curves yet.
-//! The product names describe the intended target only. See design 0001 §8 for how
-//! datasheet calibration will replace them, as BW Darkroom did for its films.
+//! The product names describe the intended target only. See design 0003 §4 for how
+//! datasheet calibration will replace them, as design 0002 did for the black-and-white films.
 
 use fd_core::CalibrationLevel;
 
@@ -46,7 +46,7 @@ pub struct Halation {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Grain {
     /// Diffuse RMS granularity (×1000, 48 µm aperture) at net density 1.0: the same
-    /// measure as BW Darkroom's films, so the Selwyn model and readout carry over.
+    /// measure as the black-and-white films, so the Selwyn model and readout carry over.
     pub rms: f64,
     /// Dye-cloud correlation scale (Gaussian σ), µm. Dye clouds are several times larger
     /// than silver grains, so colour grain is softer per pixel at the same granularity.
