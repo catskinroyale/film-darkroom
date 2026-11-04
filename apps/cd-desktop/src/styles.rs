@@ -3,7 +3,7 @@
 
 use std::path::PathBuf;
 
-use cd_profiles::{Style, builtin_styles};
+use fd_profiles::colour::{Style, builtin_styles};
 
 pub struct StyleEntry {
     pub style: Style,

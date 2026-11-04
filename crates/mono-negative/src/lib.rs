@@ -15,14 +15,14 @@ pub mod times;
 pub fn combination(
     film_id: &str,
     developer_id: &str,
-) -> Option<(bw_film::FilmStock, bw_developer::DevelopmentCalibration)> {
+) -> Option<(mono_film::FilmStock, mono_developer::DevelopmentCalibration)> {
     fitted::combination(film_id, developer_id)
         .or_else(|| illustrative::combination(film_id, developer_id))
 }
 
-use bw_developer::{DevelopmentCalibration, DevelopmentState, ProcessingConditions};
-use bw_film::FilmStock;
 use fd_core::{FilmGeometry, Lut1D, Plane, blur, noise};
+use mono_developer::{DevelopmentCalibration, DevelopmentState, ProcessingConditions};
+use mono_film::FilmStock;
 use rayon::prelude::*;
 
 /// Reflected-light meter calibration (ISO 2720): `H_m = q·K / EI` for a metered mid-tone.
@@ -357,7 +357,7 @@ fn grain_field(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bw_developer::Agitation;
+    use mono_developer::Agitation;
 
     fn setup() -> (FilmStock, DevelopmentCalibration, ProcessingConditions) {
         let (film, cal) = illustrative::combination("tri-x", "d76-stock").unwrap();
@@ -439,7 +439,7 @@ mod tests {
             [0, 0],
         );
         // Box aperture with the same area as a 48 µm circle.
-        let side_px = ((bw_film::GrainParams::APERTURE_48_UM2).sqrt() / 4.0).round() as usize;
+        let side_px = ((mono_film::GrainParams::APERTURE_48_UM2).sqrt() / 4.0).round() as usize;
         let mut samples = Vec::new();
         for by in (0..n - side_px).step_by(side_px) {
             for bx in (0..n - side_px).step_by(side_px) {
@@ -455,7 +455,8 @@ mod tests {
         let mean = samples.iter().sum::<f64>() / samples.len() as f64;
         let rms =
             (samples.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / samples.len() as f64).sqrt();
-        let expected = (0.434 * film.grain.area_um2 / bw_film::GrainParams::APERTURE_48_UM2).sqrt();
+        let expected =
+            (0.434 * film.grain.area_um2 / mono_film::GrainParams::APERTURE_48_UM2).sqrt();
         assert!(
             (rms / expected - 1.0).abs() < 0.12,
             "rms {rms}, expected {expected}"

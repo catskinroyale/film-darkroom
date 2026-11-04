@@ -13,7 +13,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 ROOT=$(pwd)
 APP_NAME="BW Darkroom"
-BIN=bw-darkroom
+BIN=mono-darkroom
 BUNDLE_ID="io.github.catskinroyale.bwdarkroom"
 VERSION=$(sed -n '/^\[workspace.package\]/,/^\[/{s/^version *= *"\(.*\)"/\1/p;}' Cargo.toml)
 ARCH=$(uname -m)

@@ -1,9 +1,9 @@
 //! Built-in and user styles. User styles persist as JSON in the platform config
-//! directory (`~/Library/Application Support/bw-darkroom/styles.json` on macOS).
+//! directory (`~/Library/Application Support/mono-darkroom/styles.json` on macOS).
 
 use std::path::PathBuf;
 
-use bw_profiles::{Style, builtin_styles};
+use fd_profiles::mono::{Style, builtin_styles};
 
 pub struct StyleEntry {
     pub style: Style,
@@ -17,7 +17,7 @@ pub struct StyleStore {
 
 impl StyleStore {
     pub fn load() -> Self {
-        let path = dirs::config_dir().map(|d| d.join("bw-darkroom").join("styles.json"));
+        let path = dirs::config_dir().map(|d| d.join("mono-darkroom").join("styles.json"));
         let mut entries: Vec<StyleEntry> = builtin_styles()
             .into_iter()
             .map(|style| StyleEntry {

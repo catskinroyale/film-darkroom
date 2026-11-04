@@ -14,6 +14,6 @@ path = "src/main.rs"
 fd-core = { path = "../../crates/fd-core" }
 fd-io = { path = "../../crates/fd-io" }
 fd-raw = { path = "../../crates/fd-raw" }
-cd-profiles = { path = "../../crates/cd-profiles" }
+fd-profiles = { path = "../../crates/fd-profiles" }
 clap = { version = "4", features = ["derive"] }
 rayon.workspace = true

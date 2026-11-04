@@ -2,9 +2,9 @@
 //! the black point held (Adams, The Negative, p. 72: expansion acts mainly on the
 //! higher values). Measured on a grey scale, zones 0–X with mid-grey at zone V.
 
-use bw_negative::SceneImage;
-use bw_profiles::{builtin_styles, render};
 use fd_core::Plane;
+use fd_core::SceneImage;
+use fd_profiles::mono::{builtin_styles, render};
 
 const PATCH: usize = 48;
 
@@ -85,7 +85,7 @@ fn pull_holds_blacks_and_softens_contrast() {
 fn overlapping_crops_show_the_same_grain() {
     // The Detail view renders crops at their place in the frame; panning must move the
     // grain with the image, so two overlapping crops agree where they overlap.
-    use bw_profiles::render_region;
+    use fd_profiles::mono::render_region;
     let style = builtin_styles()[0].clone();
     let frame_px = 1000.0;
     let crop = |size: usize| SceneImage::Mono {

@@ -4,13 +4,13 @@
 //! existing components and their settings, and [`render`] runs them through the
 //! engine.
 
-use bw_darkroom::{PrintExposure, PrintSettings, print};
-use bw_developer::{Agitation, ProcessingConditions};
-use bw_negative::{
+use fd_core::{CalibrationLevel, FilmGeometry, Plane};
+use mono_darkroom::{PrintExposure, PrintSettings, print};
+use mono_developer::{Agitation, ProcessingConditions};
+use mono_negative::{
     ExposureSettings, Metering, Negative, RenderOptions, SceneImage, develop, illustrative,
     sensitometry,
 };
-use fd_core::{CalibrationLevel, FilmGeometry, Plane};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -54,7 +54,7 @@ impl AgitationSpec {
 }
 
 /// Creative grain adjustments on top of the film's own grain (see
-/// [`bw_negative::GrainAdjust`]). The default is the film's grain, unadjusted.
+/// [`mono_negative::GrainAdjust`]). The default is the film's grain, unadjusted.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct GrainSpec {
@@ -65,7 +65,7 @@ pub struct GrainSpec {
 
 impl Default for GrainSpec {
     fn default() -> Self {
-        let a = bw_negative::GrainAdjust::default();
+        let a = mono_negative::GrainAdjust::default();
         Self {
             amount: a.amount,
             size: a.size,
@@ -75,8 +75,8 @@ impl Default for GrainSpec {
 }
 
 impl GrainSpec {
-    pub fn adjust(&self) -> bw_negative::GrainAdjust {
-        bw_negative::GrainAdjust {
+    pub fn adjust(&self) -> mono_negative::GrainAdjust {
+        mono_negative::GrainAdjust {
             amount: self.amount,
             size: self.size,
             roughness: self.roughness,
@@ -98,7 +98,7 @@ pub struct DevelopmentSpec {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct PrintSpec {
-    /// Paper id (`bw_darkroom::Paper::id`); empty or unknown means the default paper.
+    /// Paper id (`mono_darkroom::Paper::id`); empty or unknown means the default paper.
     #[serde(default)]
     pub paper: String,
     /// Variable-contrast filter grade, −1 (softest) to 5 (Kodak's 5+).
@@ -194,7 +194,7 @@ impl Style {
 
     /// Film-plane log exposure (log lux·s) of the metered mid-grey.
     fn grey_log_h(&self) -> f64 {
-        (bw_negative::METER_QK / self.exposure_ei()).log10()
+        (mono_negative::METER_QK / self.exposure_ei()).log10()
             + std::f64::consts::LOG10_2 * self.ev_compensation
     }
 
@@ -211,7 +211,7 @@ impl Style {
     }
 
     /// The published (or interpolated) development time for the current EI.
-    pub fn recommended_time(&self) -> Option<bw_negative::times::TimeLookup> {
+    pub fn recommended_time(&self) -> Option<mono_negative::times::TimeLookup> {
         illustrative::development_time(&self.film, &self.developer, self.exposure_index)
     }
 
@@ -245,7 +245,7 @@ impl Style {
     /// out about 1½ stops too light; decision P3.)
     pub fn print_settings(&self) -> PrintSettings {
         let mut settings = PrintSettings {
-            paper: bw_darkroom::Paper::from_id(&self.print.paper),
+            paper: mono_darkroom::Paper::from_id(&self.print.paper),
             grade: self.print.grade,
             preflash: self.print.preflash,
             exposure_adjust_stops: self.print.exposure_stops,
@@ -261,7 +261,7 @@ impl Style {
                 ..self.processing()
             });
             let actual = calibration.resolve(&self.processing());
-            let above_fog = |log_h: f64, state: &bw_developer::DevelopmentState| {
+            let above_fog = |log_h: f64, state: &mono_developer::DevelopmentState| {
                 calibration.net_density(log_h, state) - state.fog
             };
             let zone_i = self.grey_log_h() - 4.0 * std::f64::consts::LOG10_2;
@@ -287,7 +287,7 @@ impl Style {
         let area = film.grain.area_um2 * state.grain_area_factor;
         // Amount scales the RMS amplitude; size and roughness hold per-pixel strength.
         let granularity = 1000.0
-            * (0.434 * area / bw_film::GrainParams::APERTURE_48_UM2).sqrt()
+            * (0.434 * area / mono_film::GrainParams::APERTURE_48_UM2).sqrt()
             * self.grain.amount.max(0.0);
         Ok(ModelSummary {
             grain: GrainReadout {
@@ -317,8 +317,8 @@ impl Style {
 
     fn combination(
         &self,
-    ) -> Result<(bw_film::FilmStock, bw_developer::DevelopmentCalibration), StyleError> {
-        bw_negative::combination(&self.film, &self.developer).ok_or_else(|| {
+    ) -> Result<(mono_film::FilmStock, mono_developer::DevelopmentCalibration), StyleError> {
+        mono_negative::combination(&self.film, &self.developer).ok_or_else(|| {
             StyleError::UnknownCombination {
                 film: self.film.clone(),
                 developer: self.developer.clone(),
@@ -330,7 +330,7 @@ impl Style {
 pub struct ModelSummary {
     pub grain: GrainReadout,
     /// Where the development time came from; `None` when the user set it.
-    pub time_origin: Option<bw_negative::times::TimeOrigin>,
+    pub time_origin: Option<mono_negative::times::TimeOrigin>,
     pub film_name: String,
     pub calibration_level: CalibrationLevel,
     pub iso: Option<sensitometry::IsoSpeed>,
@@ -495,14 +495,14 @@ pub struct PaperReadout {
 
 /// Papers to choose from: id and display name.
 pub fn papers() -> Vec<(&'static str, &'static str)> {
-    bw_darkroom::Paper::ALL
+    mono_darkroom::Paper::ALL
         .into_iter()
-        .map(|p| (p.id(), bw_darkroom::PaperFamily::get(p).name))
+        .map(|p| (p.id(), mono_darkroom::PaperFamily::get(p).name))
         .collect()
 }
 
 pub fn paper_readout(paper: &str, grade: f64) -> PaperReadout {
-    let family = bw_darkroom::PaperFamily::get(bw_darkroom::Paper::from_id(paper));
+    let family = mono_darkroom::PaperFamily::get(mono_darkroom::Paper::from_id(paper));
     PaperReadout {
         name: family.name,
         level: family.provenance.level,

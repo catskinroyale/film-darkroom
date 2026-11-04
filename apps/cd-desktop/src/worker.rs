@@ -15,9 +15,9 @@ use std::sync::Arc;
 use std::sync::mpsc::{Receiver, Sender};
 use std::time::Instant;
 
-use cd_profiles::{ExportRecord, Style};
 use eframe::egui;
 use fd_core::SceneImage;
+use fd_profiles::colour::{ExportRecord, Style};
 use fd_raw::RawAdjust;
 
 use crate::export::{Conflict, Format, resolve_conflict};
@@ -238,8 +238,11 @@ fn colour_image(scene: &SceneImage) -> egui::ColorImage {
 }
 
 /// Render `scene`, which shows the whole frame `style` describes.
-fn render_whole(scene: &SceneImage, style: &Style) -> Result<cd_profiles::Rendered, String> {
-    cd_profiles::render(scene, style, style.frame_width_mm()).map_err(|e| e.to_string())
+fn render_whole(
+    scene: &SceneImage,
+    style: &Style,
+) -> Result<fd_profiles::colour::Rendered, String> {
+    fd_profiles::colour::render(scene, style, style.frame_width_mm()).map_err(|e| e.to_string())
 }
 
 pub fn spawn_renderer(rx: Receiver<Job>, tx: Sender<Msg>, ctx: egui::Context) {
@@ -294,7 +297,8 @@ pub fn spawn_renderer(rx: Receiver<Job>, tx: Sender<Msg>, ctx: egui::Context) {
                     // its place in the frame: the export's grain, moving with the image.
                     let crop_mm = style.frame_width_mm() * crop.dimensions().0 as f64 / w as f64;
                     let origin = [x as u32, y as u32];
-                    match cd_profiles::render_region(&crop, &style, crop_mm, origin, [w, h]) {
+                    match fd_profiles::colour::render_region(&crop, &style, crop_mm, origin, [w, h])
+                    {
                         Ok(r) => Msg::Detail {
                             generation,
                             image: rgb_image(&r.image),
@@ -375,13 +379,13 @@ fn export_metadata(job: &ExportJob) -> fd_io::ExportMetadata {
     let print = if s.is_slide() {
         "viewed as a slide".to_string()
     } else {
-        format!("printed on {}", cd_profiles::print_label(&s.print))
+        format!("printed on {}", fd_profiles::colour::print_label(&s.print))
     };
     let p = &s.printing;
     let comment = format!(
         "{}: {} {print}, exposure {:+.1} EV, push {:+.0}, print {:+.2} stops, colour R{:+.0} G{:+.0} B{:+.0} points",
         s.name,
-        cd_profiles::film_label(&s.film),
+        fd_profiles::colour::film_label(&s.film),
         s.ev_compensation,
         s.push,
         p.exposure_stops,
@@ -463,7 +467,7 @@ mod tests {
         ExportJob {
             source: Arc::new(Source::Raster(scene)),
             source_path: PathBuf::from("/photos/frame 01.tif"),
-            style: cd_profiles::builtin_styles().remove(0),
+            style: fd_profiles::colour::builtin_styles().remove(0),
             adjust: RawAdjust {
                 rotation: 1,
                 ..Default::default()

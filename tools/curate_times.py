@@ -41,7 +41,7 @@ ALPHA = {
 }
 
 
-# The EI push and pull are measured from (matches bw-negative's illustrative films).
+# The EI push and pull are measured from (matches mono-negative's illustrative films).
 BOX_EI = {"kentmere-100": 100, "kentmere-200": 200, "kentmere-400": 400, "tmax-100": 100, "tmax-400": 400, "tri-x": 400, "hp5": 400, "fp4": 125, "delta-100": 100, "delta-400": 400,
           "delta-3200": 3200, "double-x": 250}
 

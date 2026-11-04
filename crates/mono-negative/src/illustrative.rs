@@ -11,12 +11,12 @@
 //! it is divided by √0.9 because grain area is defined at `m_dev = 1` and D-76 stock
 //! has `m_dev = 0.9` here, so a T-Max/D-76 render reproduces the published value.
 
-use bw_developer::{
+use fd_core::{MonotoneCurve, Provenance};
+use mono_developer::{
     AdjacencyParams, Agitation, DevelopmentCalibration, FogModel, GrainModifier, SpeedGain,
     SupportedRange,
 };
-use bw_film::{FilmStock, GrainParams, SpectralWeights};
-use fd_core::{MonotoneCurve, Provenance};
+use mono_film::{FilmStock, GrainParams, SpectralWeights};
 
 use crate::times;
 
@@ -275,7 +275,7 @@ fn asymptotic_curve(gamma: f64, toe: f64, speed_point: f64, target: f64) -> Mono
 mod tests {
     use super::*;
     use crate::sensitometry::iso_speed;
-    use bw_developer::ProcessingConditions;
+    use mono_developer::ProcessingConditions;
 
     fn conditions(time_min: f64) -> ProcessingConditions {
         ProcessingConditions {

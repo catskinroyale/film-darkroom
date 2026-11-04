@@ -2,8 +2,8 @@
 //! in expandable rows. Every control carries a one- or two-line hover explanation of
 //! what it does and how it changes the image.
 
-use cd_profiles::{FilmKind, GrainSpec, ModelSummary, Style};
 use eframe::egui::{self, Color32, Pos2, Sense, Stroke, Vec2};
+use fd_profiles::colour::{FilmKind, GrainSpec, ModelSummary, Style};
 
 use crate::widgets::{self, Icon, Segment, SliderSpec, inset};
 
@@ -51,7 +51,7 @@ mod help {
 
 /// Display order and short names for films.
 fn films() -> Vec<(&'static str, &'static str, &'static str, FilmKind)> {
-    cd_profiles::film_stocks()
+    fd_profiles::colour::film_stocks()
         .into_iter()
         .map(|s| (s.id, s.name, s.about, s.kind))
         .collect()
@@ -152,7 +152,7 @@ fn spec<'a>(
 /// Film: stock, format, enlargement and processing; details and curves in flyouts.
 pub fn film_section(ui: &mut egui::Ui, s: &mut Style, summary: Option<&ModelSummary>) {
     let films = films();
-    let current = cd_profiles::film_label(&s.film);
+    let current = fd_profiles::colour::film_label(&s.film);
     let mut chosen = None;
     widgets::dropdown(ui, "film", "Film", &current, help::FILM, |ui| {
         let mut last_kind = None;
@@ -335,7 +335,7 @@ pub fn compression_section(ui: &mut egui::Ui, s: &mut Style) {
 }
 
 /// Stops in against stops out, with the identity diagonal.
-fn compression_plot(ui: &mut egui::Ui, c: &cd_profiles::Compression) {
+fn compression_plot(ui: &mut egui::Ui, c: &fd_profiles::colour::Compression) {
     let width = ui.available_width().min(320.0);
     let (response, painter) = ui.allocate_painter(Vec2::new(width, 110.0), Sense::hover());
     let rect = response.rect.shrink(4.0);
@@ -535,8 +535,8 @@ pub fn print_section(ui: &mut egui::Ui, s: &mut Style) {
             help::SLIDE_COLOUR,
         );
     } else {
-        let prints = cd_profiles::print_stocks();
-        let current = cd_profiles::print_label(&s.print);
+        let prints = fd_profiles::colour::print_stocks();
+        let current = fd_profiles::colour::print_label(&s.print);
         let mut chosen = None;
         widgets::dropdown(ui, "print", "Print", &current, help::PRINT, |ui| {
             for p in &prints {

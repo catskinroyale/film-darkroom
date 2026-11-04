@@ -1,6 +1,6 @@
 //! The virtual sensitometer (design 0001 §8.2): model curves without an image.
 
-use bw_developer::{DevelopmentCalibration, DevelopmentState};
+use mono_developer::{DevelopmentCalibration, DevelopmentState};
 
 /// Total diffuse density vs log10 exposure (lux·s).
 pub fn characteristic_curve(

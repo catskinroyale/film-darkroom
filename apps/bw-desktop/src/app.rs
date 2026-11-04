@@ -10,8 +10,8 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::mpsc::{self, Receiver, Sender};
 
-use bw_profiles::{ModelSummary, Style};
 use eframe::egui::{self, Color32, Pos2, Sense, Stroke, TextureHandle, TextureOptions, Vec2};
+use fd_profiles::mono::{ModelSummary, Style};
 
 use crate::browser::{self, Entry, ThumbRequest};
 use crate::export::{Conflict, ExportSettings, Format, NameContext, TOKENS, resolve_conflict};
@@ -347,7 +347,7 @@ pub struct App {
     exports_running: usize,
     status: String,
 
-    presets: Vec<bw_profiles::Preset>,
+    presets: Vec<fd_profiles::mono::Preset>,
     /// Style being renamed: index, text field, validation error.
     rename_dialog: Option<(usize, String, Option<String>)>,
     /// Style waiting for delete confirmation.
@@ -444,7 +444,7 @@ impl App {
             store,
             current: 0,
             summary: draft.model_summary().ok(),
-            developer_label: bw_profiles::developer_label(&draft.developer),
+            developer_label: fd_profiles::mono::developer_label(&draft.developer),
             draft,
             module,
             open_all_sections: false,
@@ -460,7 +460,7 @@ impl App {
                 bitmaps: get(KEY_BROWSER_BITMAPS).is_some_and(|v| v == "1"),
                 jpegs: get(KEY_BROWSER_JPEGS).is_some_and(|v| v == "1"),
             },
-            presets: bw_profiles::photographer_presets(),
+            presets: fd_profiles::mono::photographer_presets(),
             rename_dialog: None,
             delete_dialog: None,
             style_popup: None,
@@ -596,7 +596,7 @@ impl App {
     /// The draft style changed: refresh model summary, preview and detail.
     fn draft_changed(&mut self) {
         self.summary = self.draft.model_summary().ok();
-        self.developer_label = bw_profiles::developer_label(&self.draft.developer);
+        self.developer_label = fd_profiles::mono::developer_label(&self.draft.developer);
         self.request_preview();
     }
 
@@ -1434,7 +1434,7 @@ impl App {
                 .filter_map(|p| p.trim().parse().ok())
                 .collect::<Vec<f64>>()[..]
         {
-            let grain = bw_profiles::GrainSpec {
+            let grain = fd_profiles::mono::GrainSpec {
                 amount,
                 size,
                 roughness,

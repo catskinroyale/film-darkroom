@@ -1,7 +1,7 @@
 //! Film stock definitions (design 0001 §6.3).
 //!
 //! A film stock holds only properties of the emulsion itself. How it responds to a
-//! particular developer lives in `bw-developer::DevelopmentCalibration`.
+//! particular developer lives in `mono-developer::DevelopmentCalibration`.
 
 use fd_core::Provenance;
 

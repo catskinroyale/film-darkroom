@@ -250,8 +250,8 @@ fn auto_exposure(source: &Source, adjust: &RawAdjust) -> f64 {
             };
             let scene = source.downscaled(512).develop(&probe);
             let lum: Vec<f32> = match &scene {
-                bw_negative::SceneImage::Mono { y } => y.data().to_vec(),
-                bw_negative::SceneImage::Rgb { r, g, b } => r
+                mono_negative::SceneImage::Mono { y } => y.data().to_vec(),
+                mono_negative::SceneImage::Rgb { r, g, b } => r
                     .data()
                     .iter()
                     .zip(g.data())

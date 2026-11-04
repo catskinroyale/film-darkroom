@@ -1,5 +1,5 @@
 [package]
-name = "bw-negative"
+name = "mono-negative"
 description = "Negative simulation: exposure, development, adjacency effects and grain."
 edition.workspace = true
 version.workspace = true
@@ -8,6 +8,6 @@ rust-version.workspace = true
 
 [dependencies]
 fd-core = { path = "../fd-core" }
-bw-film = { path = "../bw-film" }
-bw-developer = { path = "../bw-developer" }
+mono-film = { path = "../mono-film" }
+mono-developer = { path = "../mono-developer" }
 rayon.workspace = true

@@ -2,9 +2,9 @@
 //! controls in expandable rows. Every control carries a one- or two-line hover
 //! explanation of what it does and how it changes the image.
 
-use bw_negative::times::TimeOrigin;
-use bw_profiles::{AgitationSpec, GrainSpec, ModelSummary, Style};
 use eframe::egui::{self, Color32, Pos2, Sense, Stroke, Vec2};
+use fd_profiles::mono::{AgitationSpec, GrainSpec, ModelSummary, Style};
+use mono_negative::times::TimeOrigin;
 
 use crate::widgets::{self, Icon, Segment, SliderSpec, inset};
 
@@ -185,9 +185,9 @@ fn change_film(s: &mut Style, film: &str) {
     let manual_time = s.development.time_min;
     s.film = film.to_string();
     if !s.is_available()
-        && let Some(dev) = bw_profiles::developer_ids()
+        && let Some(dev) = fd_profiles::mono::developer_ids()
             .iter()
-            .find(|d| bw_profiles::is_available(film, d))
+            .find(|d| fd_profiles::mono::is_available(film, d))
     {
         s.developer = dev.to_string();
     }
@@ -271,7 +271,7 @@ fn spec<'a>(
 
 fn film_label(id: &str) -> String {
     FILMS.iter().find(|(f, ..)| *f == id).map_or_else(
-        || bw_profiles::film_label(id),
+        || fd_profiles::mono::film_label(id),
         |(_, label, _)| label.to_string(),
     )
 }
@@ -330,7 +330,7 @@ pub fn film_section(ui: &mut egui::Ui, s: &mut Style) {
 /// Development: developer, dilution, push/pull; details and the curve in expandable rows.
 pub fn development_section(ui: &mut egui::Ui, s: &mut Style, summary: Option<&ModelSummary>) {
     let (family, dilution) = {
-        let (f, d) = bw_profiles::split_developer(&s.developer);
+        let (f, d) = fd_profiles::mono::split_developer(&s.developer);
         (f.to_string(), d.to_string())
     };
     let mut chosen = None;
@@ -338,15 +338,15 @@ pub fn development_section(ui: &mut egui::Ui, s: &mut Style, summary: Option<&Mo
         ui,
         "developer",
         "Developer",
-        bw_profiles::developer_family_label(&family),
+        fd_profiles::mono::developer_family_label(&family),
         help::DEVELOPER,
         |ui| {
-            for (fam, dilutions) in bw_profiles::developer_families() {
+            for (fam, dilutions) in fd_profiles::mono::developer_families() {
                 let first = dilutions
                     .iter()
                     .map(|d| format!("{fam}-{d}"))
-                    .find(|id| bw_profiles::is_available(&s.film, id));
-                let label = bw_profiles::developer_family_label(fam);
+                    .find(|id| fd_profiles::mono::is_available(&s.film, id));
+                let label = fd_profiles::mono::developer_family_label(fam);
                 let r = ui
                     .add_enabled(
                         first.is_some(),
@@ -365,7 +365,7 @@ pub fn development_section(ui: &mut egui::Ui, s: &mut Style, summary: Option<&Mo
     {
         change_developer(s, id);
     }
-    if let Some((fam, dilutions)) = bw_profiles::developer_families()
+    if let Some((fam, dilutions)) = fd_profiles::mono::developer_families()
         .iter()
         .find(|(f, _)| *f == family)
         && dilutions.len() > 1
@@ -373,7 +373,7 @@ pub fn development_section(ui: &mut egui::Ui, s: &mut Style, summary: Option<&Mo
         widgets::subtitle(ui, "Dilution", help::DILUTION);
         let labels: Vec<String> = dilutions
             .iter()
-            .map(|d| bw_profiles::dilution_label(fam, d))
+            .map(|d| fd_profiles::mono::dilution_label(fam, d))
             .collect();
         let segments: Vec<Segment> = dilutions
             .iter()
@@ -381,7 +381,7 @@ pub fn development_section(ui: &mut egui::Ui, s: &mut Style, summary: Option<&Mo
             .map(|(d, label)| Segment {
                 label,
                 selected: dilution == *d,
-                enabled: bw_profiles::is_available(&s.film, &format!("{fam}-{d}")),
+                enabled: fd_profiles::mono::is_available(&s.film, &format!("{fam}-{d}")),
                 help: dilution_help(fam, d),
             })
             .collect();
@@ -665,7 +665,7 @@ pub fn grain_section(ui: &mut egui::Ui, s: &mut Style, summary: Option<&ModelSum
 
 /// Print: paper grade and enlarger exposure.
 pub fn print_section(ui: &mut egui::Ui, s: &mut Style) {
-    let papers = bw_profiles::papers();
+    let papers = fd_profiles::mono::papers();
     let current = papers
         .iter()
         .find(|(id, _)| *id == s.print.paper)
@@ -674,7 +674,7 @@ pub fn print_section(ui: &mut egui::Ui, s: &mut Style) {
     let mut chosen = None;
     widgets::dropdown(ui, "paper", "Paper", current, help::PAPER, |ui| {
         for (id, name) in &papers {
-            let selected = bw_profiles::paper_readout(&s.print.paper, 2.0).name == *name;
+            let selected = fd_profiles::mono::paper_readout(&s.print.paper, 2.0).name == *name;
             if ui.add(egui::Button::selectable(selected, *name)).clicked() {
                 chosen = Some(*id);
             }
@@ -683,7 +683,7 @@ pub fn print_section(ui: &mut egui::Ui, s: &mut Style) {
     if let Some(id) = chosen {
         s.print.paper = id.to_string();
     }
-    let paper = bw_profiles::paper_readout(&s.print.paper, s.print.grade);
+    let paper = fd_profiles::mono::paper_readout(&s.print.paper, s.print.grade);
     let (lo, hi) = paper.grade_range;
     widgets::slider(
         ui,

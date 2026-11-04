@@ -15,10 +15,10 @@ use std::sync::Arc;
 use std::sync::mpsc::{Receiver, Sender};
 use std::time::Instant;
 
-use bw_negative::SceneImage;
-use bw_profiles::{ExportRecord, Style};
 use eframe::egui;
+use fd_profiles::mono::{ExportRecord, Style};
 use fd_raw::RawAdjust;
+use mono_negative::SceneImage;
 
 use crate::export::{Conflict, Format, resolve_conflict};
 use crate::source::Source;
@@ -240,8 +240,8 @@ fn colour_image(scene: &SceneImage) -> egui::ColorImage {
 }
 
 /// Render `scene`, which shows the whole frame `style` describes.
-fn render_whole(scene: &SceneImage, style: &Style) -> Result<bw_profiles::Rendered, String> {
-    bw_profiles::render(scene, style, style.frame_width_mm()).map_err(|e| e.to_string())
+fn render_whole(scene: &SceneImage, style: &Style) -> Result<fd_profiles::mono::Rendered, String> {
+    fd_profiles::mono::render(scene, style, style.frame_width_mm()).map_err(|e| e.to_string())
 }
 
 pub fn spawn_renderer(rx: Receiver<Job>, tx: Sender<Msg>, ctx: egui::Context) {
@@ -296,7 +296,7 @@ pub fn spawn_renderer(rx: Receiver<Job>, tx: Sender<Msg>, ctx: egui::Context) {
                     // its place in the frame: the export's grain, moving with the image.
                     let crop_mm = style.frame_width_mm() * crop.dimensions().0 as f64 / w as f64;
                     let origin = [x as u32, y as u32];
-                    match bw_profiles::render_region(&crop, &style, crop_mm, origin) {
+                    match fd_profiles::mono::render_region(&crop, &style, crop_mm, origin) {
                         Ok(r) => Msg::Detail {
                             generation,
                             image: gray_image(&r.print),
@@ -378,8 +378,8 @@ fn export_metadata(job: &ExportJob) -> fd_io::ExportMetadata {
     let comment = format!(
         "{}: {} in {}, EI {:.0}, {:.2} min at {:.1} C, {}, paper grade {:.1}",
         s.name,
-        bw_profiles::film_label(&s.film),
-        bw_profiles::developer_label(&s.developer),
+        fd_profiles::mono::film_label(&s.film),
+        fd_profiles::mono::developer_label(&s.developer),
         s.exposure_index,
         process.time_min,
         process.temperature_c,
@@ -460,7 +460,7 @@ mod tests {
         ExportJob {
             source: Arc::new(Source::Raster(scene)),
             source_path: PathBuf::from("/photos/frame 01.tif"),
-            style: bw_profiles::builtin_styles().remove(0),
+            style: fd_profiles::mono::builtin_styles().remove(0),
             adjust: RawAdjust {
                 rotation: 1,
                 ..Default::default()

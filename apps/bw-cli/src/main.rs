@@ -9,11 +9,11 @@ mod report;
 
 use std::path::PathBuf;
 
-use bw_darkroom::{PrintSettings, print};
-use bw_developer::{Agitation, ProcessingConditions};
-use bw_negative::{ExposureSettings, Metering, RenderOptions, develop, sensitometry};
 use clap::{Parser, Subcommand, ValueEnum};
 use fd_core::FilmGeometry;
+use mono_darkroom::{PrintSettings, print};
+use mono_developer::{Agitation, ProcessingConditions};
+use mono_negative::{ExposureSettings, Metering, RenderOptions, develop, sensitometry};
 
 #[derive(Parser)]
 #[command(name = "bw", about = "Black-and-white photographic emulation engine")]
@@ -185,7 +185,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let mut entries = Vec::new();
 
             for (i, var) in standard_variations().into_iter().enumerate() {
-                let (film, calibration) = bw_negative::combination(var.film, var.developer)
+                let (film, calibration) = mono_negative::combination(var.film, var.developer)
                     .ok_or_else(|| {
                         format!(
                             "no illustrative calibration for {}/{}",
@@ -246,7 +246,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         (-4.5, 0.5),
                         101,
                     ),
-                    grey_log_h: (bw_negative::METER_QK / var.exposure_index).log10(),
+                    grey_log_h: (mono_negative::METER_QK / var.exposure_index).log10(),
                     warnings: negative.warnings.clone(),
                     millis: elapsed.as_millis(),
                 });

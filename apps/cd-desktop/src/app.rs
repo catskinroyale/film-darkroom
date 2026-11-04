@@ -10,8 +10,8 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::mpsc::{self, Receiver, Sender};
 
-use cd_profiles::{ModelSummary, Style};
 use eframe::egui::{self, Color32, Pos2, Sense, Stroke, TextureHandle, TextureOptions, Vec2};
+use fd_profiles::colour::{ModelSummary, Style};
 
 use crate::browser::{self, Entry, ThumbRequest};
 use crate::export::{Conflict, ExportSettings, Format, NameContext, TOKENS, resolve_conflict};
@@ -206,7 +206,7 @@ fn print_label(style: &Style) -> String {
     if style.is_slide() {
         "slide".into()
     } else {
-        cd_profiles::print_label(&style.print)
+        fd_profiles::colour::print_label(&style.print)
     }
 }
 
@@ -1410,7 +1410,7 @@ impl App {
                 .filter_map(|p| p.trim().parse().ok())
                 .collect::<Vec<f64>>()[..]
         {
-            let grain = cd_profiles::GrainSpec {
+            let grain = fd_profiles::colour::GrainSpec {
                 amount,
                 size,
                 roughness,
@@ -2066,7 +2066,7 @@ impl App {
                             t.font(13.0),
                             colour,
                         );
-                        let hover = cd_profiles::film_stocks()
+                        let hover = fd_profiles::colour::film_stocks()
                             .into_iter()
                             .find(|f| f.id == entry.style.film)
                             .map_or_else(

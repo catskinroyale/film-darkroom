@@ -2,14 +2,14 @@
 //! serialisable recipe. The desktop app and the CLI render through [`render`] and
 //! [`render_region`].
 
-use cd_film::{
+use colour_film::{
     Developed, FilmStock, GrainAdjust, LightEffects, PrintStock, Printing, Region, RenderOptions,
 };
 use fd_core::{CalibrationLevel, FilmGeometry, GeometryError, SceneImage};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-pub use cd_film::{Compression, FilmKind, film_stocks, print_stocks};
+pub use colour_film::{Compression, FilmKind, film_stocks, print_stocks};
 
 #[derive(Debug, Error)]
 pub enum StyleError {
@@ -253,11 +253,12 @@ impl Style {
     }
 
     pub fn film_stock(&self) -> Result<FilmStock, StyleError> {
-        cd_film::film_stock(&self.film).ok_or_else(|| StyleError::UnknownFilm(self.film.clone()))
+        colour_film::film_stock(&self.film)
+            .ok_or_else(|| StyleError::UnknownFilm(self.film.clone()))
     }
 
     pub fn print_stock(&self) -> Result<PrintStock, StyleError> {
-        cd_film::print_stock(&self.print)
+        colour_film::print_stock(&self.print)
             .ok_or_else(|| StyleError::UnknownPrint(self.print.clone()))
     }
 
@@ -304,7 +305,7 @@ impl Style {
     }
 }
 
-pub use cd_film::Rendered;
+pub use colour_film::Rendered;
 
 /// Render a whole frame. `frame_width_mm` is the width of film the image spans.
 pub fn render(
@@ -315,7 +316,7 @@ pub fn render(
     let (w, h) = scene.dimensions();
     let geometry = FilmGeometry::from_frame_width(frame_width_mm, w, h)?;
     let (stock, print) = (style.film_stock()?, style.print_stock()?);
-    Ok(cd_film::render(
+    Ok(colour_film::render(
         scene,
         &stock,
         &print,
@@ -338,7 +339,7 @@ pub fn render_region(
     let geometry = FilmGeometry::from_frame_width(crop_width_mm, w, h)?;
     let (stock, print) = (style.film_stock()?, style.print_stock()?);
     let region = Some(Region { origin, frame });
-    Ok(cd_film::render(
+    Ok(colour_film::render(
         scene,
         &stock,
         &print,
@@ -385,11 +386,11 @@ impl<'a> ExportRecord<'a> {
 }
 
 pub fn film_label(id: &str) -> String {
-    cd_film::film_stock(id).map_or_else(|| id.to_string(), |s| s.name.to_string())
+    colour_film::film_stock(id).map_or_else(|| id.to_string(), |s| s.name.to_string())
 }
 
 pub fn print_label(id: &str) -> String {
-    cd_film::print_stock(id).map_or_else(|| id.to_string(), |s| s.name.to_string())
+    colour_film::print_stock(id).map_or_else(|| id.to_string(), |s| s.name.to_string())
 }
 
 /// The shipped styles: each film on its natural print, plus some classic combinations.

@@ -9,9 +9,9 @@
 
 use std::path::{Path, PathBuf};
 
-use cd_profiles::{Style, builtin_styles};
 use clap::{Parser, Subcommand};
 use fd_core::{Plane, SceneImage};
+use fd_profiles::colour::{Style, builtin_styles};
 
 #[derive(Parser)]
 #[command(name = "colour", version, about = "Colour film emulation")]
@@ -139,11 +139,11 @@ fn run() -> Result<(), String> {
                 println!("  {}", s.name);
             }
             println!("\nFilm stocks (illustrative):");
-            for f in cd_profiles::film_stocks() {
+            for f in fd_profiles::colour::film_stocks() {
                 println!("  {:<16} {}", f.id, f.name);
             }
             println!("\nPrint stocks (illustrative):");
-            for p in cd_profiles::print_stocks() {
+            for p in fd_profiles::colour::print_stocks() {
                 println!("  {:<16} {}", p.id, p.name);
             }
         }
@@ -183,8 +183,8 @@ fn run() -> Result<(), String> {
                 return save(&rgb, &out);
             }
             let start = std::time::Instant::now();
-            let r =
-                cd_profiles::render(&scene, &s, s.frame_width_mm()).map_err(|e| e.to_string())?;
+            let r = fd_profiles::colour::render(&scene, &s, s.frame_width_mm())
+                .map_err(|e| e.to_string())?;
             eprintln!("rendered in {} ms", start.elapsed().as_millis());
             save(&r.image, &out)?;
         }
@@ -204,7 +204,7 @@ fn run() -> Result<(), String> {
             let mut sheet: [Plane; 3] =
                 std::array::from_fn(|_| Plane::filled(sw, sh, 0.05).expect("non-zero"));
             for (k, s) in styles.iter().enumerate() {
-                let r = cd_profiles::render(&scene, s, s.frame_width_mm())
+                let r = fd_profiles::colour::render(&scene, s, s.frame_width_mm())
                     .map_err(|e| format!("{}: {e}", s.name))?;
                 let (ox, oy) = (gap + (k % cols) * (w + gap), gap + (k / cols) * (h + gap));
                 for (plane, image) in sheet.iter_mut().zip(&r.image) {

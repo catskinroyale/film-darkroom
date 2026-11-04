@@ -1,6 +1,6 @@
 [package]
-name = "bw-film"
-description = "Film stock definitions: spectral response, emulsion spread and grain parameters."
+name = "mono-developer"
+description = "Developer behaviour: film/developer calibrations and processing conditions."
 edition.workspace = true
 version.workspace = true
 license.workspace = true

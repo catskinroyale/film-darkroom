@@ -6,9 +6,9 @@
 //! base density are fitted; adjacency, compensation, grain growth and spectral response
 //! still come from the illustrative tables and are labelled as such.
 
-use bw_developer::{Agitation, DevelopmentCalibration, FogModel, SpeedGain, SupportedRange};
-use bw_film::FilmStock;
 use fd_core::{CalibrationLevel, MonotoneCurve, Provenance};
+use mono_developer::{Agitation, DevelopmentCalibration, FogModel, SpeedGain, SupportedRange};
+use mono_film::FilmStock;
 
 use crate::illustrative;
 
@@ -353,7 +353,7 @@ fn approximation(film_id: &str, developer_id: &str) -> Option<(FilmStock, Develo
 mod tests {
     use super::*;
     use crate::sensitometry::iso_speed;
-    use bw_developer::ProcessingConditions;
+    use mono_developer::ProcessingConditions;
 
     fn agitated(interval_s: f64, time_min: f64) -> ProcessingConditions {
         ProcessingConditions {
