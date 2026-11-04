@@ -12,7 +12,7 @@
 //! Exposure is relative: 1.0 is the metered mid-grey (scene value 0.18) and log
 //! exposure `x = log10(H)` is 0 there. Densities are net of base + fog unless stated.
 
-pub mod compression;
+pub use fd_core::compression;
 pub mod stock;
 
 pub use compression::Compression;

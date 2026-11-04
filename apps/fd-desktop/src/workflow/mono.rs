@@ -236,11 +236,12 @@ fn randomise_grain(s: &mut Style) {
 }
 
 /// Section and expandable-row keys, in panel order (for "Edit…", which opens them all).
-pub const SECTION_KEYS: [&str; 7] = [
+pub const SECTION_KEYS: [&str; 8] = [
     "film",
     "development",
     "development.details",
     "development.curve",
+    "compression",
     "grain",
     "print",
     "image",

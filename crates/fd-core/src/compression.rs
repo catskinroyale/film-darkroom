@@ -1,5 +1,6 @@
 //! Film compression: fit a digital photo's highlights into the range film records, before
-//! the film sees it (design 0001 C10).
+//! the film sees it (colour design C10). Shared by both processes; black and white uses
+//! the luminance curve only (colour density has no meaning there).
 //!
 //! A sensor clips abruptly; a negative keeps absorbing light and rolls highlights off over
 //! many stops, so heavily exposed highlights crowd towards the mid-tones and the image
@@ -19,10 +20,13 @@
 //! It is a creative control in the spirit of the film's own shoulder, not a separate
 //! physical stage: the film's curve still applies afterwards.
 
-use fd_core::Plane;
 use rayon::prelude::*;
 
-use crate::GREY;
+use crate::plane::Plane;
+use crate::scene::SceneImage;
+
+/// Scene value metered as mid-grey.
+const GREY: f64 = 0.18;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Compression {
@@ -95,6 +99,39 @@ impl Compression {
                 (u, self.map_stops(u))
             })
             .collect()
+    }
+
+    /// The scene with its highlights compressed (a copy; the scene itself when off).
+    pub fn apply_scene<'a>(&self, scene: &'a SceneImage) -> std::borrow::Cow<'a, SceneImage> {
+        if self.is_off() {
+            return std::borrow::Cow::Borrowed(scene);
+        }
+        std::borrow::Cow::Owned(match scene {
+            SceneImage::Rgb { .. } => {
+                let mut rgb = scene.to_rgb();
+                self.apply(&mut rgb);
+                let [r, g, b] = rgb;
+                SceneImage::Rgb { r, g, b }
+            }
+            SceneImage::Mono { y } => {
+                let mut y = y.clone();
+                self.apply_mono(&mut y);
+                SceneImage::Mono { y }
+            }
+        })
+    }
+
+    /// Compress a luminance plane in place.
+    pub fn apply_mono(&self, y: &mut Plane) {
+        if self.is_off() {
+            return;
+        }
+        y.data_mut().par_iter_mut().for_each(|v| {
+            if *v > 1e-6 {
+                let u = (f64::from(*v) / GREY).log2();
+                *v *= 2f64.powf(self.map_stops(u) - u) as f32;
+            }
+        });
     }
 
     /// Compress scene-linear Rec.709 planes in place.
@@ -180,6 +217,27 @@ mod tests {
             .map_stops(5.0)
         };
         assert!(top(50.0) > top(100.0) && top(100.0) > top(120.0));
+    }
+
+    #[test]
+    fn mono_and_rgb_agree_on_neutral_tones() {
+        let c = on();
+        let values = [0.01f32, 0.18, 0.9, 4.0];
+        let plane = || Plane::from_vec(4, 1, values.to_vec()).unwrap();
+        let mut y = plane();
+        c.apply_mono(&mut y);
+        let mut rgb = [plane(), plane(), plane()];
+        c.apply(&mut rgb);
+        for i in 0..4 {
+            assert!((y.get(i, 0) - rgb[1].get(i, 0)).abs() < 1e-5);
+        }
+        assert!(y.get(3, 0) < 4.0 * 0.6, "bright value compressed");
+        let off = Compression::default();
+        let scene = SceneImage::Mono { y: plane() };
+        assert!(matches!(
+            off.apply_scene(&scene),
+            std::borrow::Cow::Borrowed(_)
+        ));
     }
 
     #[test]

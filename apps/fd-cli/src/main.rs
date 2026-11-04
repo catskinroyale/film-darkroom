@@ -76,7 +76,7 @@ enum Command {
         /// Camera exposure compensation, stops.
         #[arg(long, allow_hyphen_values = true)]
         ev: Option<f64>,
-        /// Film compression impact, 0–100 (colour).
+        /// Film compression impact, 0–100.
         #[arg(long)]
         compression: Option<f64>,
         /// Multiplier on the film's interlayer effect (colour).
@@ -242,8 +242,8 @@ fn apply_overrides(
             if let Some(p) = push {
                 s.set_push_stops(p);
             }
-            if compression.is_some() {
-                return Err(colour_only("--compression"));
+            if let Some(c) = compression {
+                s.compression.impact = c;
             }
             if interlayer.is_some() {
                 return Err(colour_only("--interlayer"));

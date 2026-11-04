@@ -13,6 +13,44 @@ use fd_core::{Plane, SceneImage};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+/// Film compression of the highlights before the film (colour design C10), for either
+/// process. Black and white ignores `colour_density`.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct CompressionSpec {
+    pub impact: f64,
+    pub tonal_range: f64,
+    pub white_point: f64,
+    pub colour_density: f64,
+}
+
+impl Default for CompressionSpec {
+    fn default() -> Self {
+        let c = fd_core::Compression::default();
+        Self {
+            impact: c.impact,
+            tonal_range: c.tonal_range,
+            white_point: c.white_point,
+            colour_density: c.colour_density,
+        }
+    }
+}
+
+impl CompressionSpec {
+    pub fn compression(&self) -> fd_core::Compression {
+        fd_core::Compression {
+            impact: self.impact,
+            tonal_range: self.tonal_range,
+            white_point: self.white_point,
+            colour_density: self.colour_density,
+        }
+    }
+
+    pub fn is_default(&self) -> bool {
+        *self == Self::default()
+    }
+}
+
 /// Which photographic process a style uses.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -442,6 +480,42 @@ mod tests {
             (slide.developer.as_str(), slide.print.as_str()),
             ("E-6", "slide")
         );
+    }
+
+    #[test]
+    fn compression_recovers_black_and_white_highlights_and_keeps_grey() {
+        // Mid-grey on the left half, a highlight 4½ stops brighter on the right.
+        let plane = Plane::from_fn(64, 32, |x, _| if x < 32 { 0.18 } else { 4.0 }).unwrap();
+        let scene = SceneImage::Rgb {
+            r: plane.clone(),
+            g: plane.clone(),
+            b: plane,
+        };
+        let print = |impact: f64| {
+            let mut s = mono::builtin_styles().remove(0);
+            s.compression.impact = impact;
+            // Knee 2½ stops above grey, so grey itself is clear of the soft knee.
+            s.compression.tonal_range = 20.0;
+            let Output::Grey(p) = render(&scene, &Style::Mono(s), 36.0).unwrap().into_output()
+            else {
+                unreachable!()
+            };
+            let mean = |x0: usize| {
+                (x0 + 8..x0 + 24)
+                    .flat_map(|x| (8..24).map(move |y| (x, y)))
+                    .map(|(x, y)| f64::from(p.get(x, y)))
+                    .sum::<f64>()
+                    / 256.0
+            };
+            (mean(0), mean(32))
+        };
+        let (grey, white) = print(0.0);
+        let (grey_c, white_c) = print(80.0);
+        assert!(
+            (grey_c / grey - 1.0).abs() < 0.03,
+            "grey {grey} -> {grey_c}"
+        );
+        assert!(white_c < white * 0.97, "highlight {white} -> {white_c}");
     }
 
     #[test]

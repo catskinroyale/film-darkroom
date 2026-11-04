@@ -13,6 +13,8 @@ use mono_negative::{
 };
 use serde::{Deserialize, Serialize};
 
+pub use crate::CompressionSpec;
+
 pub use mono_negative::times::{TimeLookup, TimeOrigin};
 use thiserror::Error;
 
@@ -135,6 +137,9 @@ pub struct Style {
     /// Grain size, amount and roughness relative to the film's own grain.
     #[serde(default, skip_serializing_if = "GrainSpec::is_film_grain")]
     pub grain: GrainSpec,
+    /// Highlight compression of the scene before the film; off by default.
+    #[serde(default, skip_serializing_if = "CompressionSpec::is_default")]
+    pub compression: CompressionSpec,
 }
 
 fn default_seed() -> u64 {
@@ -380,8 +385,9 @@ pub fn render_region(
         grain: style.grain.adjust(),
         grain_origin: origin,
     };
+    let scene = style.compression.compression().apply_scene(scene);
     let negative = develop(
-        scene,
+        &scene,
         &exposure,
         &film,
         &style.processing(),
@@ -582,6 +588,7 @@ pub fn photographer_presets() -> Vec<Preset> {
             format_mm,
             crop,
             grain: GrainSpec::default(),
+            compression: CompressionSpec::default(),
         };
         s.set_push_stops(push);
         s
@@ -720,6 +727,7 @@ pub fn builtin_styles() -> Vec<Style> {
             format_mm: 36.0,
             crop: 1.0,
             grain: GrainSpec::default(),
+            compression: CompressionSpec::default(),
         };
         style.set_push_stops(push);
         style

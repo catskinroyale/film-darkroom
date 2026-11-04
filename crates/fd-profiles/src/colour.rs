@@ -9,6 +9,7 @@ use fd_core::{CalibrationLevel, FilmGeometry, GeometryError, SceneImage};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+pub use crate::CompressionSpec;
 pub use colour_film::{Compression, FilmKind, film_stocks, print_stocks};
 
 #[derive(Debug, Error)]
@@ -87,43 +88,6 @@ impl LightSpec {
             bloom: self.bloom,
             bloom_size: self.bloom_size,
             vignette: self.vignette,
-        }
-    }
-
-    pub fn is_default(&self) -> bool {
-        *self == Self::default()
-    }
-}
-
-/// Film compression of the highlights before the film (design 0001 C10).
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(default)]
-pub struct CompressionSpec {
-    pub impact: f64,
-    pub tonal_range: f64,
-    pub white_point: f64,
-    pub colour_density: f64,
-}
-
-impl Default for CompressionSpec {
-    fn default() -> Self {
-        let c = Compression::default();
-        Self {
-            impact: c.impact,
-            tonal_range: c.tonal_range,
-            white_point: c.white_point,
-            colour_density: c.colour_density,
-        }
-    }
-}
-
-impl CompressionSpec {
-    pub fn compression(&self) -> Compression {
-        Compression {
-            impact: self.impact,
-            tonal_range: self.tonal_range,
-            white_point: self.white_point,
-            colour_density: self.colour_density,
         }
     }
 

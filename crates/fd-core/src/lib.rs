@@ -11,6 +11,7 @@
 //! - [`blur`]: separable Gaussian filtering; [`blur::gaussian_blur_wide`] for halation and bloom.
 
 pub mod blur;
+pub mod compression;
 pub mod curve;
 pub mod geometry;
 pub mod noise;
@@ -18,6 +19,7 @@ pub mod plane;
 pub mod provenance;
 pub mod scene;
 
+pub use compression::Compression;
 pub use curve::{CurveError, Lut1D, MonotoneCurve};
 pub use geometry::{FilmGeometry, GeometryError};
 pub use plane::{Plane, PlaneError};
