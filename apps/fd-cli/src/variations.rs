@@ -1,49 +1,16 @@
-//! `bw`: command-line front end.
-//!
-//! `bw variations` renders a set of film/developer/processing variations of one image
-//! and writes prints, negatives and an HTML contact sheet with each variation's model
-//! characteristic curve.
-
-mod chart;
-mod report;
+//! `film variations`: a set of black-and-white film/developer/processing variations of
+//! one image, written as prints, negatives and an HTML contact sheet with each
+//! variation's model characteristic curve.
 
 use std::path::PathBuf;
 
-use clap::{Parser, Subcommand, ValueEnum};
+use clap::ValueEnum;
+
+use crate::{chart, report};
 use fd_core::FilmGeometry;
 use mono_darkroom::{PrintSettings, print};
 use mono_developer::{Agitation, ProcessingConditions};
 use mono_negative::{ExposureSettings, Metering, RenderOptions, develop, sensitometry};
-
-#[derive(Parser)]
-#[command(name = "bw", about = "Black-and-white photographic emulation engine")]
-struct Cli {
-    #[command(subcommand)]
-    command: Command,
-}
-
-#[derive(Subcommand)]
-enum Command {
-    /// Render a standard set of variations of one image.
-    Variations {
-        /// Input image (PNG/JPEG/TIFF), or `chart` for the built-in synthetic test scene.
-        #[arg(long)]
-        input: String,
-        /// Output directory.
-        #[arg(long)]
-        out: PathBuf,
-        /// Width of film the image spans, in mm (36 = full 35 mm frame; smaller = enlarged crop).
-        #[arg(long, default_value_t = 36.0)]
-        frame_mm: f64,
-        #[arg(long, value_enum, default_value_t = Encoding::Auto)]
-        encoding: Encoding,
-        /// Scene value treated as metered mid-grey.
-        #[arg(long, default_value_t = 0.18)]
-        grey: f32,
-        #[arg(long, default_value_t = 1)]
-        seed: u64,
-    },
-}
 
 /// How input pixel values relate to scene light.
 #[derive(Clone, Copy, ValueEnum)]
@@ -156,16 +123,17 @@ fn standard_variations() -> Vec<Variation> {
     ]
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    match Cli::parse().command {
-        Command::Variations {
-            input,
-            out,
-            frame_mm,
-            encoding,
-            grey,
-            seed,
-        } => {
+/// Render the standard variations of `input` (a file, or `chart`) into `out`.
+pub fn run(
+    input: String,
+    out: PathBuf,
+    frame_mm: f64,
+    encoding: Encoding,
+    grey: f32,
+    seed: u64,
+) -> Result<(), Box<dyn std::error::Error>> {
+    {
+        {
             std::fs::create_dir_all(&out)?;
             let scene = if input == "chart" {
                 chart::synthetic_scene(2400, 1600)

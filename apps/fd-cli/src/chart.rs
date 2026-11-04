@@ -6,7 +6,7 @@
 //! field for edge effects.
 
 use fd_core::Plane;
-use mono_negative::SceneImage;
+use fd_core::SceneImage;
 
 pub fn synthetic_scene(width: usize, height: usize) -> SceneImage {
     // Linear Rec.709 patches; luminances are all close to 0.18.

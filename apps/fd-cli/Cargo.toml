@@ -1,13 +1,13 @@
 [package]
-name = "cd-cli"
-description = "Command-line front end for the colour film emulation engine."
+name = "fd-cli"
+description = "Command-line front end for the colour and black-and-white film emulation engines."
 edition.workspace = true
 version.workspace = true
 license.workspace = true
 rust-version.workspace = true
 
 [[bin]]
-name = "colour"
+name = "film"
 path = "src/main.rs"
 
 [dependencies]
@@ -15,5 +15,8 @@ fd-core = { path = "../../crates/fd-core" }
 fd-io = { path = "../../crates/fd-io" }
 fd-raw = { path = "../../crates/fd-raw" }
 fd-profiles = { path = "../../crates/fd-profiles" }
+mono-film = { path = "../../crates/mono-film" }
+mono-developer = { path = "../../crates/mono-developer" }
+mono-negative = { path = "../../crates/mono-negative" }
+mono-darkroom = { path = "../../crates/mono-darkroom" }
 clap = { version = "4", features = ["derive"] }
-rayon.workspace = true
