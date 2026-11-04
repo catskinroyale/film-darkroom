@@ -138,7 +138,7 @@ impl About {
                     ui.label("BW Darkroom app, CLI and engine crates");
                     ui.label("Apache-2.0");
                     ui.end_row();
-                    ui.label("bw-core engine foundation");
+                    ui.label("fd-core engine foundation");
                     ui.label("MIT");
                     ui.end_row();
                 });

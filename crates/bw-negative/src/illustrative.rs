@@ -11,12 +11,12 @@
 //! it is divided by √0.9 because grain area is defined at `m_dev = 1` and D-76 stock
 //! has `m_dev = 0.9` here, so a T-Max/D-76 render reproduces the published value.
 
-use bw_core::{MonotoneCurve, Provenance};
 use bw_developer::{
     AdjacencyParams, Agitation, DevelopmentCalibration, FogModel, GrainModifier, SpeedGain,
     SupportedRange,
 };
 use bw_film::{FilmStock, GrainParams, SpectralWeights};
+use fd_core::{MonotoneCurve, Provenance};
 
 use crate::times;
 

@@ -6,9 +6,9 @@
 //! base density are fitted; adjacency, compensation, grain growth and spectral response
 //! still come from the illustrative tables and are labelled as such.
 
-use bw_core::{CalibrationLevel, MonotoneCurve, Provenance};
 use bw_developer::{Agitation, DevelopmentCalibration, FogModel, SpeedGain, SupportedRange};
 use bw_film::FilmStock;
+use fd_core::{CalibrationLevel, MonotoneCurve, Provenance};
 
 use crate::illustrative;
 

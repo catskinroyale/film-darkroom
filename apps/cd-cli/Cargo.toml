@@ -11,9 +11,9 @@ name = "colour"
 path = "src/main.rs"
 
 [dependencies]
-cd-core = { path = "../../crates/cd-core" }
-cd-io = { path = "../../crates/cd-io" }
-cd-raw = { path = "../../crates/cd-raw" }
+fd-core = { path = "../../crates/fd-core" }
+fd-io = { path = "../../crates/fd-io" }
+fd-raw = { path = "../../crates/fd-raw" }
 cd-profiles = { path = "../../crates/cd-profiles" }
 clap = { version = "4", features = ["derive"] }
 rayon.workspace = true

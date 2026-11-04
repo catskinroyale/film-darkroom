@@ -22,7 +22,7 @@ pub use stock::{
     print_stock, print_stocks,
 };
 
-use cd_core::{FilmGeometry, Lut1D, Plane, SceneImage, blur, noise};
+use fd_core::{FilmGeometry, Lut1D, Plane, SceneImage, blur, noise};
 use rayon::prelude::*;
 
 /// Scene value metered as mid-grey.
@@ -957,7 +957,7 @@ mod tests {
         let stock = film_stock("portra-800").unwrap();
         let print = print_stock("scan").unwrap();
         let (w, h) = (160, 120);
-        let scene = cd_core::SceneImage::Rgb {
+        let scene = fd_core::SceneImage::Rgb {
             r: Plane::filled(w, h, 0.18).unwrap(),
             g: Plane::filled(w, h, 0.18).unwrap(),
             b: Plane::filled(w, h, 0.18).unwrap(),
@@ -968,7 +968,7 @@ mod tests {
         let std = std_dev(&full.density[1]);
         assert!(std > 0.005, "visible grain {std}");
         // The crop at (40, 30) has exactly that region's grain.
-        let crop = cd_core::SceneImage::Rgb {
+        let crop = fd_core::SceneImage::Rgb {
             r: Plane::filled(50, 40, 0.18).unwrap(),
             g: Plane::filled(50, 40, 0.18).unwrap(),
             b: Plane::filled(50, 40, 0.18).unwrap(),

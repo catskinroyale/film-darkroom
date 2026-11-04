@@ -7,5 +7,5 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-cd-core = { path = "../cd-core" }
+fd-core = { path = "../fd-core" }
 rayon.workspace = true

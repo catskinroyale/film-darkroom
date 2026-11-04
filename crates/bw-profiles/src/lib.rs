@@ -4,13 +4,13 @@
 //! existing components and their settings, and [`render`] runs them through the
 //! engine.
 
-use bw_core::{CalibrationLevel, FilmGeometry, Plane};
 use bw_darkroom::{PrintExposure, PrintSettings, print};
 use bw_developer::{Agitation, ProcessingConditions};
 use bw_negative::{
     ExposureSettings, Metering, Negative, RenderOptions, SceneImage, develop, illustrative,
     sensitometry,
 };
+use fd_core::{CalibrationLevel, FilmGeometry, Plane};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -19,7 +19,7 @@ pub enum StyleError {
     #[error("unknown film/developer combination {film}/{developer}")]
     UnknownCombination { film: String, developer: String },
     #[error(transparent)]
-    Geometry(#[from] bw_core::GeometryError),
+    Geometry(#[from] fd_core::GeometryError),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]

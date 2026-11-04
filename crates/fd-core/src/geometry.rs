@@ -1,6 +1,6 @@
 //! Mapping between image pixels and the film plane.
 //!
-//! Grain, emulsion light spread and developer adjacency effects have physical sizes
+//! Grain, light spread, halation and adjacency effects have physical sizes
 //! on the film (micrometres). Specifying them in µm and converting through
 //! [`FilmGeometry`] keeps their appearance correct at any resolution and film format.
 

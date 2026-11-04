@@ -1,4 +1,4 @@
-//! Where a calibration came from and how far it can be trusted (design 0001 §10, §6.2).
+//! Where a calibration came from and how far it can be trusted (mono design 0001 §10, §6.2).
 
 /// How a set of model parameters was obtained.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]

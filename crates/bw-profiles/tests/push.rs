@@ -2,9 +2,9 @@
 //! the black point held (Adams, The Negative, p. 72: expansion acts mainly on the
 //! higher values). Measured on a grey scale, zones 0–X with mid-grey at zone V.
 
-use bw_core::Plane;
 use bw_negative::SceneImage;
 use bw_profiles::{builtin_styles, render};
+use fd_core::Plane;
 
 const PATCH: usize = 48;
 

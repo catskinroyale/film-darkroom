@@ -9,9 +9,9 @@
 
 use std::path::{Path, PathBuf};
 
-use cd_core::{Plane, SceneImage};
 use cd_profiles::{Style, builtin_styles};
 use clap::{Parser, Subcommand};
+use fd_core::{Plane, SceneImage};
 
 #[derive(Parser)]
 #[command(name = "colour", version, about = "Colour film emulation")]
@@ -80,26 +80,26 @@ fn load(
     exposure: Option<f64>,
     defringe: f64,
 ) -> Result<SceneImage, String> {
-    if cd_raw::is_raw(path) {
-        let photo = cd_raw::open(path).map_err(|e| e.to_string())?;
+    if fd_raw::is_raw(path) {
+        let photo = fd_raw::open(path).map_err(|e| e.to_string())?;
         let photo = match edge {
             Some(e) => photo.downscaled(e),
             None => photo,
         };
-        let mut adjust = cd_raw::RawAdjust {
+        let mut adjust = fd_raw::RawAdjust {
             defringe,
             ..Default::default()
         };
         adjust.exposure_ev = exposure.unwrap_or_else(|| photo.auto_exposure_ev(&adjust));
         Ok(photo.develop(&adjust))
     } else {
-        let scene = cd_io::load_scene(path, cd_io::Encoding::Auto).map_err(|e| e.to_string())?;
+        let scene = fd_io::load_scene(path, fd_io::Encoding::Auto).map_err(|e| e.to_string())?;
         let scene = match edge {
-            Some(e) => cd_io::downscale(&scene, e),
+            Some(e) => fd_io::downscale(&scene, e),
             None => scene,
         };
         Ok(match exposure {
-            Some(ev) => cd_io::scale(&scene, 2f32.powf(ev as f32)),
+            Some(ev) => fd_io::scale(&scene, 2f32.powf(ev as f32)),
             None => scene,
         })
     }
@@ -113,7 +113,7 @@ fn find_style(name: &str) -> Result<Style, String> {
 }
 
 fn save(rgb: &[Plane; 3], out: &Path) -> Result<(), String> {
-    let meta = cd_io::ExportMetadata {
+    let meta = fd_io::ExportMetadata {
         software: format!("Colour Darkroom CLI {}", env!("CARGO_PKG_VERSION")),
         ..Default::default()
     };
@@ -123,9 +123,9 @@ fn save(rgb: &[Plane; 3], out: &Path) -> Result<(), String> {
         .unwrap_or("")
         .to_ascii_lowercase();
     match ext.as_str() {
-        "jpg" | "jpeg" => cd_io::save_jpeg(rgb, out, 92, &meta),
-        "png" => cd_io::save_png16(rgb, out, &meta),
-        "tif" | "tiff" => cd_io::save_tiff16(rgb, out, &meta),
+        "jpg" | "jpeg" => fd_io::save_jpeg(rgb, out, 92, &meta),
+        "png" => fd_io::save_png16(rgb, out, &meta),
+        "tif" | "tiff" => fd_io::save_tiff16(rgb, out, &meta),
         _ => return Err("output must be .jpg, .png or .tif".into()),
     }
     .map_err(|e| e.to_string())

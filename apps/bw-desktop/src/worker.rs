@@ -17,8 +17,8 @@ use std::time::Instant;
 
 use bw_negative::SceneImage;
 use bw_profiles::{ExportRecord, Style};
-use bw_raw::RawAdjust;
 use eframe::egui;
+use fd_raw::RawAdjust;
 
 use crate::export::{Conflict, Format, resolve_conflict};
 use crate::source::Source;
@@ -227,15 +227,15 @@ impl Pending {
     }
 }
 
-fn gray_image(plane: &bw_core::Plane) -> egui::ColorImage {
+fn gray_image(plane: &fd_core::Plane) -> egui::ColorImage {
     egui::ColorImage::from_gray(
         [plane.width(), plane.height()],
-        &bw_io::plane_to_srgb_gray8(plane),
+        &fd_io::plane_to_srgb_gray8(plane),
     )
 }
 
 fn colour_image(scene: &SceneImage) -> egui::ColorImage {
-    let (w, h, px) = bw_io::scene_to_srgb_rgba(scene);
+    let (w, h, px) = fd_io::scene_to_srgb_rgba(scene);
     egui::ColorImage::from_rgba_unmultiplied([w, h], &px)
 }
 
@@ -284,7 +284,7 @@ pub fn spawn_renderer(rx: Receiver<Job>, tx: Sender<Msg>, ctx: egui::Context) {
                     let full = cur.full(&adjust);
                     let (w, h) = full.dimensions();
                     let (x, y, cw, ch) = detail_rect(w, h, centre, crop_px);
-                    let crop = bw_io::crop(full, x, y, cw, ch);
+                    let crop = fd_io::crop(full, x, y, cw, ch);
                     let area = [
                         x as f32 / w as f32,
                         y as f32 / h as f32,
@@ -372,7 +372,7 @@ pub fn recipe_path(image: &std::path::Path) -> PathBuf {
 
 /// Metadata for an export: the source's EXIF (camera, lens, exposure, dates, GPS,
 /// artist, copyright), this application as Software, and the recipe as a comment.
-fn export_metadata(job: &ExportJob) -> bw_io::ExportMetadata {
+fn export_metadata(job: &ExportJob) -> fd_io::ExportMetadata {
     let s = &job.style;
     let process = s.processing();
     let comment = format!(
@@ -386,8 +386,8 @@ fn export_metadata(job: &ExportJob) -> bw_io::ExportMetadata {
         s.development.agitation.label().to_lowercase(),
         s.print.grade,
     );
-    bw_io::ExportMetadata {
-        exif: bw_io::read_exif(&job.source_path),
+    fd_io::ExportMetadata {
+        exif: fd_io::read_exif(&job.source_path),
         software: format!("BW Darkroom {}", env!("CARGO_PKG_VERSION")),
         comment: Some(comment),
     }
@@ -408,16 +408,16 @@ pub fn spawn_export(job: ExportJob, tx: Sender<Msg>, ctx: egui::Context) {
                 let rendered = render_whole(&scene, &job.style)?;
                 drop(scene);
                 let print = match job.long_edge {
-                    Some(edge) => bw_io::resize_long_edge(&rendered.print, edge as usize),
+                    Some(edge) => fd_io::resize_long_edge(&rendered.print, edge as usize),
                     None => rendered.print.clone(),
                 };
                 let path = resolve_conflict(job.target.clone(), job.conflict);
                 let meta = export_metadata(&job);
                 match job.format {
-                    Format::Jpeg => bw_io::save_print_jpeg(&print, &path, job.jpeg_quality, &meta),
-                    Format::Png16 => bw_io::save_print_png16(&print, &path, &meta),
+                    Format::Jpeg => fd_io::save_grey_jpeg(&print, &path, job.jpeg_quality, &meta),
+                    Format::Png16 => fd_io::save_grey_png16(&print, &path, &meta),
                     Format::Tiff16 | Format::SameAsOriginal => {
-                        bw_io::save_print_tiff16(&print, &path, &meta)
+                        fd_io::save_grey_tiff16(&print, &path, &meta)
                     }
                 }
                 .map_err(|e| e.to_string())?;
@@ -455,7 +455,7 @@ mod tests {
 
     fn job(dir: &Path, format: Format, conflict: Conflict) -> ExportJob {
         let scene = SceneImage::Mono {
-            y: bw_core::Plane::from_fn(96, 64, |x, y| 0.01 + (x + y) as f32 / 160.0).unwrap(),
+            y: fd_core::Plane::from_fn(96, 64, |x, y| 0.01 + (x + y) as f32 / 160.0).unwrap(),
         };
         ExportJob {
             source: Arc::new(Source::Raster(scene)),
@@ -518,13 +518,13 @@ mod tests {
             ifd_num: exif::In::PRIMARY,
             value: exif::Value::Ascii(vec![b"NIKON CORPORATION".to_vec()]),
         };
-        let src_meta = bw_io::ExportMetadata {
-            exif: Some(bw_io::Exif::from_fields(vec![make])),
+        let src_meta = fd_io::ExportMetadata {
+            exif: Some(fd_io::Exif::from_fields(vec![make])),
             software: "Camera firmware".into(),
             comment: None,
         };
-        let plane = bw_core::Plane::from_fn(96, 64, |x, y| 0.01 + (x + y) as f32 / 160.0).unwrap();
-        bw_io::save_print_jpeg(&plane, &source, 90, &src_meta).unwrap();
+        let plane = fd_core::Plane::from_fn(96, 64, |x, y| 0.01 + (x + y) as f32 / 160.0).unwrap();
+        fd_io::save_grey_jpeg(&plane, &source, 90, &src_meta).unwrap();
         let job_for = |format| {
             let mut j = job(&dir, format, Conflict::Overwrite);
             j.source_path = source.clone();
@@ -532,7 +532,7 @@ mod tests {
         };
         for format in [Format::Tiff16, Format::Jpeg, Format::Png16] {
             let out = run(job_for(format));
-            // Read everything the file holds (bw_io::read_exif filters for re-export).
+            // Read everything the file holds (fd_io::read_exif filters for re-export).
             let mut reader = std::io::BufReader::new(std::fs::File::open(&out).unwrap());
             let exif = exif::Reader::new()
                 .read_from_container(&mut reader)
@@ -565,19 +565,19 @@ mod tests {
         std::fs::remove_dir_all(&dir).unwrap();
     }
 
-    /// With `BW_RAW_SAMPLE` set to a raw file, export it and check the camera record
+    /// With `FILM_RAW_SAMPLE` set to a raw file, export it and check the camera record
     /// survives. `BW_KEEP_EXPORTS=1` leaves the files in the temp folder for inspection.
     #[test]
     fn raw_export_keeps_camera_exif_when_sample_available() {
-        let Some(sample) = std::env::var_os("BW_RAW_SAMPLE").map(PathBuf::from) else {
-            eprintln!("skipped: set BW_RAW_SAMPLE");
+        let Some(sample) = std::env::var_os("FILM_RAW_SAMPLE").map(PathBuf::from) else {
+            eprintln!("skipped: set FILM_RAW_SAMPLE");
             return;
         };
         let Ok(source) = Source::open(&sample) else {
             eprintln!("skipped: sample can't be decoded");
             return;
         };
-        let dir = std::env::temp_dir().join(format!("bw-raw-exif-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("fd-raw-exif-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         let source = Arc::new(source);
         for format in [Format::Jpeg, Format::Tiff16] {

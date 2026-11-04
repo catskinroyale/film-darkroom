@@ -8,7 +8,7 @@ pub enum SceneImage {
     /// White-balanced, scene-linear Rec.709/sRGB primaries.
     Rgb { r: Plane, g: Plane, b: Plane },
     /// Native monochrome sensor response (e.g. a Leica Monochrom). The colour film
-    /// sees it as a neutral scene.
+    /// sees it as a neutral scene; black-and-white film sees it directly.
     Mono { y: Plane },
 }
 

@@ -11,10 +11,10 @@ name = "colour-darkroom"
 path = "src/main.rs"
 
 [dependencies]
-cd-core = { path = "../../crates/cd-core" }
-cd-io = { path = "../../crates/cd-io" }
+fd-core = { path = "../../crates/fd-core" }
+fd-io = { path = "../../crates/fd-io" }
 cd-profiles = { path = "../../crates/cd-profiles" }
-cd-raw = { path = "../../crates/cd-raw" }
+fd-raw = { path = "../../crates/fd-raw" }
 eframe = { version = "0.37", default-features = false, features = ["default_fonts", "glow", "persistence"] }
 rfd = "0.17"
 dirs = "7"

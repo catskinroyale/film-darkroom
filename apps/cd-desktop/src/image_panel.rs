@@ -2,8 +2,8 @@
 //! Scene-referred only (exposure, white balance, highlight handling, rotation): tone
 //! and colour rendering are left to the film and print.
 
-use cd_raw::{Highlights, RawAdjust, WhiteBalance};
 use eframe::egui;
+use fd_raw::{Highlights, RawAdjust, WhiteBalance};
 
 use crate::source::Source;
 use crate::widgets::{self, Icon, Segment, SliderSpec, inset};
@@ -266,8 +266,8 @@ fn auto_exposure(source: &Source, adjust: &RawAdjust) -> f64 {
             };
             let scene = source.downscaled(512).develop(&probe);
             let lum: Vec<f32> = match &scene {
-                cd_core::SceneImage::Mono { y } => y.data().to_vec(),
-                cd_core::SceneImage::Rgb { r, g, b } => r
+                fd_core::SceneImage::Mono { y } => y.data().to_vec(),
+                fd_core::SceneImage::Rgb { r, g, b } => r
                     .data()
                     .iter()
                     .zip(g.data())

@@ -3,7 +3,7 @@
 //! A film stock holds only properties of the emulsion itself. How it responds to a
 //! particular developer lives in `bw-developer::DevelopmentCalibration`.
 
-use bw_core::Provenance;
+use fd_core::Provenance;
 
 /// Linear projection of scene-linear RGB onto the film's spectral sensitivity
 /// (design 0001 §5.1). Weights sum to 1 so that neutrals give `E = Y`.

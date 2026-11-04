@@ -1,14 +1,13 @@
 [package]
-name = "bw-io"
-description = "Image loading, resampling and export for the black-and-white emulation engine."
+name = "fd-io"
+description = "Image loading, resampling and export for the film emulation engines."
 edition.workspace = true
 version.workspace = true
 license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-bw-core = { path = "../bw-core" }
-bw-negative = { path = "../bw-negative" }
+fd-core = { path = "../fd-core" }
 image = { workspace = true }
 rayon.workspace = true
 exif = { package = "kamadak-exif", version = "0.6" }

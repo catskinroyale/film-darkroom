@@ -4,8 +4,8 @@
 
 use std::path::{Path, PathBuf};
 
-use cd_core::SceneImage;
-use cd_raw::{CaptureInfo, RawAdjust, RawPhoto};
+use fd_core::SceneImage;
+use fd_raw::{CaptureInfo, RawAdjust, RawPhoto};
 use serde::{Deserialize, Serialize};
 
 pub enum Source {
@@ -15,12 +15,12 @@ pub enum Source {
 
 impl Source {
     pub fn open(path: &Path) -> Result<Source, String> {
-        if cd_raw::is_raw(path) {
-            cd_raw::open(path)
+        if fd_raw::is_raw(path) {
+            fd_raw::open(path)
                 .map(|p| Source::Raw(Box::new(p)))
                 .map_err(|e| e.to_string())
         } else {
-            cd_io::load_scene(path, cd_io::Encoding::Auto)
+            fd_io::load_scene(path, fd_io::Encoding::Auto)
                 .map(Source::Raster)
                 .map_err(|e| e.to_string())
         }
@@ -29,7 +29,7 @@ impl Source {
     /// The scene after per-image adjustments, at full resolution.
     pub fn develop(&self, adjust: &RawAdjust) -> SceneImage {
         match self {
-            Source::Raster(scene) => cd_raw::adjust_rendered(scene, adjust),
+            Source::Raster(scene) => fd_raw::adjust_rendered(scene, adjust),
             Source::Raw(photo) => photo.develop(adjust),
         }
     }
@@ -37,7 +37,7 @@ impl Source {
     /// A reduced copy (long edge ≤ `edge`) to develop previews from quickly.
     pub fn downscaled(&self, edge: usize) -> Source {
         match self {
-            Source::Raster(scene) => Source::Raster(cd_io::downscale(scene, edge)),
+            Source::Raster(scene) => Source::Raster(fd_io::downscale(scene, edge)),
             Source::Raw(photo) => Source::Raw(Box::new(photo.downscaled(edge))),
         }
     }

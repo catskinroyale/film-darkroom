@@ -2,8 +2,8 @@
 //! Scene-referred only (exposure, white balance, highlight handling, rotation): tone
 //! is left to the film, developer and paper.
 
-use bw_raw::{Highlights, RawAdjust, WhiteBalance};
 use eframe::egui;
+use fd_raw::{Highlights, RawAdjust, WhiteBalance};
 
 use crate::source::Source;
 use crate::widgets::{self, Icon, Segment, SliderSpec, inset};

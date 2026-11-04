@@ -11,10 +11,10 @@ name = "bw"
 path = "src/main.rs"
 
 [dependencies]
-bw-core = { path = "../../crates/bw-core" }
+fd-core = { path = "../../crates/fd-core" }
 bw-film = { path = "../../crates/bw-film" }
 bw-developer = { path = "../../crates/bw-developer" }
 bw-negative = { path = "../../crates/bw-negative" }
 bw-darkroom = { path = "../../crates/bw-darkroom" }
 clap = { version = "4", features = ["derive"] }
-bw-io = { path = "../../crates/bw-io" }
+fd-io = { path = "../../crates/fd-io" }

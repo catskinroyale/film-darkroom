@@ -20,9 +20,9 @@ pub fn combination(
         .or_else(|| illustrative::combination(film_id, developer_id))
 }
 
-use bw_core::{FilmGeometry, Lut1D, Plane, blur, noise};
 use bw_developer::{DevelopmentCalibration, DevelopmentState, ProcessingConditions};
 use bw_film::FilmStock;
+use fd_core::{FilmGeometry, Lut1D, Plane, blur, noise};
 use rayon::prelude::*;
 
 /// Reflected-light meter calibration (ISO 2720): `H_m = q·K / EI` for a metered mid-tone.
@@ -32,24 +32,8 @@ pub const METER_QK: f64 = 0.65 * 12.5;
 const LOG_H_RANGE: (f64, f64) = (-6.0, 2.0);
 const LUT_SIZE: usize = 4096;
 
-/// Scene-linear input.
-#[derive(Clone, Debug)]
-pub enum SceneImage {
-    /// White-balanced, scene-linear Rec.709/sRGB primaries.
-    Rgb { r: Plane, g: Plane, b: Plane },
-    /// Native monochrome sensor response; no spectral emulation is possible.
-    Mono { y: Plane },
-}
-
-impl SceneImage {
-    pub fn dimensions(&self) -> (usize, usize) {
-        let p = match self {
-            Self::Rgb { r, .. } => r,
-            Self::Mono { y } => y,
-        };
-        (p.width(), p.height())
-    }
-}
+/// Scene-linear input (shared with the colour engine).
+pub use fd_core::SceneImage;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Metering {

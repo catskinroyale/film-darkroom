@@ -1,4 +1,4 @@
-//! Camera raw input (`cd-raw`, as BW Darkroom's `bw-raw`).
+//! Camera raw input (`fd-raw`), shared by the colour and black-and-white processes.
 //!
 //! Decoding, demosaicing, the DNG colour model and highlight reconstruction come from
 //! LightCraft's `lightcraft-raw` (MIT OR Apache-2.0, pure Rust), pinned in the
@@ -15,8 +15,8 @@
 
 use std::path::Path;
 
-use cd_core::Plane;
-use cd_core::SceneImage;
+use fd_core::Plane;
+use fd_core::SceneImage;
 use lightcraft_color::{Mat3, REC2020, SRGB, Xy, cct};
 use lightcraft_geom::Orientation;
 use lightcraft_raster::Rgb32f;
@@ -330,7 +330,7 @@ pub struct RawPhoto {
     pub info: CaptureInfo,
 }
 
-/// Map an EXIF orientation to `(mirror, clockwise quarter turns)` for [`cd_io::transform`].
+/// Map an EXIF orientation to `(mirror, clockwise quarter turns)` for [`fd_io::transform`].
 pub fn exif_transform(o: Orientation) -> (bool, u8) {
     match o {
         Orientation::Normal => (false, 0),
@@ -444,7 +444,7 @@ impl RawPhoto {
         let mut out = self.clone();
         out.pixels = match &self.pixels {
             Pixels::Mono(p) => {
-                let scene = cd_io::downscale(&SceneImage::Mono { y: p.clone() }, max_edge);
+                let scene = fd_io::downscale(&SceneImage::Mono { y: p.clone() }, max_edge);
                 let SceneImage::Mono { y } = scene else {
                     unreachable!("mono stays mono")
                 };
@@ -589,7 +589,7 @@ impl RawPhoto {
         apply_contrast(&mut scene, adjust.contrast);
         apply_defringe(&mut scene, adjust.defringe);
         let (flip, turns) = exif_transform(self.orientation);
-        cd_io::transform(&scene, flip, (turns + adjust.rotation) % 4)
+        fd_io::transform(&scene, flip, (turns + adjust.rotation) % 4)
     }
 }
 
@@ -599,11 +599,11 @@ pub fn adjust_rendered(scene: &SceneImage, adjust: &RawAdjust) -> SceneImage {
     let mut scaled = if adjust.exposure_ev == 0.0 {
         scene.clone()
     } else {
-        cd_io::scale(scene, 2f32.powf(adjust.exposure_ev as f32))
+        fd_io::scale(scene, 2f32.powf(adjust.exposure_ev as f32))
     };
     apply_contrast(&mut scaled, adjust.contrast);
     apply_defringe(&mut scaled, adjust.defringe);
-    cd_io::transform(&scaled, false, adjust.rotation % 4)
+    fd_io::transform(&scaled, false, adjust.rotation % 4)
 }
 
 #[cfg(test)]
@@ -780,16 +780,16 @@ mod tests {
         assert!((y.data().iter().copied().fold(0.0f32, f32::max) - 1.5).abs() < 1e-6);
     }
 
-    fn exif_tag_make() -> cd_io::metadata::ExifTag {
-        cd_io::metadata::ExifTag::Make
+    fn exif_tag_make() -> fd_io::metadata::ExifTag {
+        fd_io::metadata::ExifTag::Make
     }
 
-    /// Decodes a real Nikon Z f NEF when `COLOUR_RAW_SAMPLE` points at one (CC0 samples:
+    /// Decodes a real Nikon Z f NEF when `FILM_RAW_SAMPLE` points at one (CC0 samples:
     /// raw.pixls.us/data/Nikon/Z f/).
     #[test]
     fn decodes_sample_nef_when_available() {
-        let Some(path) = std::env::var_os("COLOUR_RAW_SAMPLE") else {
-            eprintln!("skipped: set COLOUR_RAW_SAMPLE to a raw file");
+        let Some(path) = std::env::var_os("FILM_RAW_SAMPLE") else {
+            eprintln!("skipped: set FILM_RAW_SAMPLE to a raw file");
             return;
         };
         let photo = match open(Path::new(&path)) {
@@ -811,7 +811,7 @@ mod tests {
         let (t, _) = photo.as_shot_temp_tint();
         assert!((2000.0..12000.0).contains(&t), "as-shot temperature {t}");
         // The raw file's EXIF (camera, exposure, date) is readable for exports.
-        let exif = cd_io::read_exif(Path::new(&path)).expect("raw EXIF");
+        let exif = fd_io::read_exif(Path::new(&path)).expect("raw EXIF");
         assert!(exif.get(exif_tag_make()).is_some());
         let scene = photo.downscaled(800).develop(&RawAdjust::default());
         let (w, h) = scene.dimensions();

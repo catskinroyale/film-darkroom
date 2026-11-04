@@ -7,7 +7,7 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-bw-core = { path = "../bw-core" }
+fd-core = { path = "../fd-core" }
 bw-developer = { path = "../bw-developer" }
 bw-film = { path = "../bw-film" }
 bw-negative = { path = "../bw-negative" }

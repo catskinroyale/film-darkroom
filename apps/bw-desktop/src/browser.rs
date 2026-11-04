@@ -31,10 +31,10 @@ pub enum Kind {
 
 /// The kind of an image file, or `None` for files the app can't open.
 pub fn kind_of(path: &Path) -> Option<Kind> {
-    if bw_raw::is_raw(path) {
+    if fd_raw::is_raw(path) {
         return Some(Kind::Raw);
     }
-    if !bw_io::is_supported_image(path) {
+    if !fd_io::is_supported_image(path) {
         return None;
     }
     let ext = path.extension()?.to_str()?.to_ascii_lowercase();
@@ -325,10 +325,10 @@ pub fn spawn_thumbnailer(rx: Receiver<ThumbRequest>, tx: Sender<Msg>, ctx: egui:
                     continue;
                 };
                 // Raw files: the camera's embedded preview, which is fast and already rendered.
-                let thumb = if bw_raw::is_raw(&path) {
-                    bw_raw::thumbnail(&path, THUMB_EDGE)
+                let thumb = if fd_raw::is_raw(&path) {
+                    fd_raw::thumbnail(&path, THUMB_EDGE)
                 } else {
-                    bw_io::load_thumbnail(&path, THUMB_EDGE).ok()
+                    fd_io::load_thumbnail(&path, THUMB_EDGE).ok()
                 };
                 if let Some((w, h, px)) = thumb {
                     let image = egui::ColorImage::from_rgba_unmultiplied([w, h], &px);

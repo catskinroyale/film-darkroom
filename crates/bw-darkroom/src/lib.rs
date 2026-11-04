@@ -8,8 +8,8 @@
 
 use std::sync::OnceLock;
 
-use bw_core::{CalibrationLevel, Lut1D, MonotoneCurve, Plane, Provenance};
 use bw_negative::Negative;
+use fd_core::{CalibrationLevel, Lut1D, MonotoneCurve, Plane, Provenance};
 use rayon::prelude::*;
 
 const POLYMAX_II_RC: &str = include_str!("../../../data/papers/kodak-polymax-ii-rc.csv");

@@ -23,7 +23,7 @@ use crate::updates::{self, CheckResult, Release};
 use crate::widgets::{self, Icon, inset};
 use crate::worker::{self, Job, Msg};
 use crate::workflow;
-use cd_raw::RawAdjust;
+use fd_raw::RawAdjust;
 
 const KEY_FOLDER: &str = "folder";
 const KEY_MODULE: &str = "right_module";

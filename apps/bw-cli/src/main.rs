@@ -9,11 +9,11 @@ mod report;
 
 use std::path::PathBuf;
 
-use bw_core::FilmGeometry;
 use bw_darkroom::{PrintSettings, print};
 use bw_developer::{Agitation, ProcessingConditions};
 use bw_negative::{ExposureSettings, Metering, RenderOptions, develop, sensitometry};
 use clap::{Parser, Subcommand, ValueEnum};
+use fd_core::FilmGeometry;
 
 #[derive(Parser)]
 #[command(name = "bw", about = "Black-and-white photographic emulation engine")]
@@ -170,12 +170,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let scene = if input == "chart" {
                 chart::synthetic_scene(2400, 1600)
             } else {
-                bw_io::load_scene(
+                fd_io::load_scene(
                     std::path::Path::new(&input),
                     match encoding {
-                        Encoding::Auto => bw_io::Encoding::Auto,
-                        Encoding::Srgb => bw_io::Encoding::Srgb,
-                        Encoding::Linear => bw_io::Encoding::Linear,
+                        Encoding::Auto => fd_io::Encoding::Auto,
+                        Encoding::Srgb => fd_io::Encoding::Srgb,
+                        Encoding::Linear => fd_io::Encoding::Linear,
                     },
                 )
                 .map_err(|e| -> Box<dyn std::error::Error> { e })?
@@ -221,9 +221,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let elapsed = start.elapsed();
 
                 let stem = format!("{:02}", i + 1);
-                bw_io::save_srgb_png(&positive, &out.join(format!("{stem}-print.png")))?;
-                bw_io::save_negative_png(&negative, &out.join(format!("{stem}-negative.png")))?;
-                bw_io::save_linear_tiff16(&positive, &out.join(format!("{stem}-print.tif")))?;
+                fd_io::save_grey_png(&positive, &out.join(format!("{stem}-print.png")))?;
+                fd_io::save_negative_png(
+                    &negative.density,
+                    negative.base_plus_fog,
+                    &out.join(format!("{stem}-negative.png")),
+                )?;
+                fd_io::save_linear_tiff16(&positive, &out.join(format!("{stem}-print.tif")))?;
 
                 let state = negative.state;
                 entries.push(report::Entry {

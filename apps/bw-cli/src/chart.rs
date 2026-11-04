@@ -5,8 +5,8 @@
 //! separates. Bottom: a smooth log gradient, fine bars and a dark disc on a bright
 //! field for edge effects.
 
-use bw_core::Plane;
 use bw_negative::SceneImage;
+use fd_core::Plane;
 
 pub fn synthetic_scene(width: usize, height: usize) -> SceneImage {
     // Linear Rec.709 patches; luminances are all close to 0.18.

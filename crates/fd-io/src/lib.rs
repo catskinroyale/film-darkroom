@@ -7,8 +7,8 @@ pub mod metadata;
 
 use std::path::Path;
 
-use bw_core::Plane;
-use bw_negative::{Negative, SceneImage};
+use fd_core::Plane;
+use fd_core::SceneImage;
 use image::{DynamicImage, ImageBuffer, ImageEncoder, Luma};
 pub use metadata::{Exif, ExportMetadata, read_exif};
 use rayon::prelude::*;
@@ -169,7 +169,7 @@ pub fn crop(scene: &SceneImage, x: usize, y: usize, width: usize, height: usize)
 /// Mirror left–right, then rotate clockwise by `quarter_turns` × 90°.
 ///
 /// Every EXIF orientation is one of these eight combinations; see
-/// `bw_raw::exif_transform` for the mapping.
+/// `fd_raw::exif_transform` for the mapping.
 pub fn transform(scene: &SceneImage, flip_h: bool, quarter_turns: u8) -> SceneImage {
     let turns = quarter_turns % 4;
     if !flip_h && turns == 0 {
@@ -229,71 +229,99 @@ pub fn scene_to_srgb_rgba(scene: &SceneImage) -> (usize, usize, Vec<u8>) {
     (w, h, px)
 }
 
-/// Linear reflectance as 8-bit sRGB grey.
-pub fn plane_to_srgb_gray8(plane: &Plane) -> Vec<u8> {
-    plane
-        .data()
-        .par_iter()
-        .map(|&v| to_u8(linear_to_srgb(v)))
+/// A display-referred colour image: linear Rec.709 light relative to white (0–1).
+pub type Rgb = [Plane; 3];
+
+fn interleave_srgb8(rgb: &Rgb) -> Vec<u8> {
+    let [r, g, b] = rgb;
+    (0..r.data().len())
+        .into_par_iter()
+        .flat_map_iter(|i| {
+            [
+                to_u8(linear_to_srgb(r.data()[i])),
+                to_u8(linear_to_srgb(g.data()[i])),
+                to_u8(linear_to_srgb(b.data()[i])),
+            ]
+        })
         .collect()
 }
 
-/// Reflectance (relative to paper white) as an 8-bit sRGB PNG.
-pub fn save_srgb_png(plane: &Plane, path: &Path) -> image::ImageResult<()> {
-    let buf: ImageBuffer<Luma<u8>, Vec<u8>> = ImageBuffer::from_raw(
-        plane.width() as u32,
-        plane.height() as u32,
-        plane_to_srgb_gray8(plane),
-    )
-    .expect("buffer matches dimensions");
-    buf.save(path)
+fn interleave_srgb16(rgb: &Rgb) -> Vec<u16> {
+    let [r, g, b] = rgb;
+    let to16 = |v: f32| (linear_to_srgb(v) * 65535.0 + 0.5) as u16;
+    (0..r.data().len())
+        .into_par_iter()
+        .flat_map_iter(|i| [to16(r.data()[i]), to16(g.data()[i]), to16(b.data()[i])])
+        .collect()
+}
+
+/// Display-linear colour as 8-bit sRGB RGBA, for the screen.
+pub fn rgb_to_srgb_rgba(rgb: &Rgb) -> (usize, usize, Vec<u8>) {
+    let [r, g, b] = rgb;
+    let px = (0..r.data().len())
+        .into_par_iter()
+        .flat_map_iter(|i| {
+            [
+                to_u8(linear_to_srgb(r.data()[i])),
+                to_u8(linear_to_srgb(g.data()[i])),
+                to_u8(linear_to_srgb(b.data()[i])),
+                255,
+            ]
+        })
+        .collect();
+    (r.width(), r.height(), px)
 }
 
 fn to_image_error(e: impl std::fmt::Display) -> image::ImageError {
     image::ImageError::IoError(std::io::Error::other(e.to_string()))
 }
 
-fn srgb16(plane: &Plane) -> Vec<u16> {
-    plane
-        .data()
-        .par_iter()
-        .map(|&v| (linear_to_srgb(v) * 65535.0 + 0.5) as u16)
-        .collect()
-}
-
-/// Reflectance as an 8-bit greyscale JPEG (sRGB transfer curve) at `quality` 1–100,
-/// with `meta` written as an EXIF segment.
-pub fn save_print_jpeg(
-    plane: &Plane,
+/// Colour as an 8-bit sRGB JPEG at `quality` 1–100, with `meta` as an EXIF segment.
+pub fn save_jpeg(
+    rgb: &Rgb,
     path: &Path,
     quality: u8,
     meta: &ExportMetadata,
 ) -> image::ImageResult<()> {
-    let (w, h) = (plane.width() as u32, plane.height() as u32);
-    let data = plane_to_srgb_gray8(plane);
+    let (w, h) = (rgb[0].width() as u32, rgb[0].height() as u32);
+    let data = interleave_srgb8(rgb);
     let file = std::io::BufWriter::new(std::fs::File::create(path)?);
     let mut encoder =
         image::codecs::jpeg::JpegEncoder::new_with_quality(file, quality.clamp(1, 100));
     encoder
         .set_exif_metadata(meta.exif_block(w, h).map_err(to_image_error)?)
         .map_err(to_image_error)?;
-    encoder.write_image(&data, w, h, image::ExtendedColorType::L8)
+    encoder.write_image(&data, w, h, image::ExtendedColorType::Rgb8)
 }
 
-/// Reflectance as a 16-bit greyscale PNG (sRGB transfer curve) with an eXIf chunk.
-pub fn save_print_png16(
-    plane: &Plane,
-    path: &Path,
-    meta: &ExportMetadata,
-) -> image::ImageResult<()> {
-    let (w, h) = (plane.width() as u32, plane.height() as u32);
-    let bytes: Vec<u8> = srgb16(plane).iter().flat_map(|v| v.to_ne_bytes()).collect();
+/// Colour as a 16-bit sRGB PNG with an eXIf chunk.
+pub fn save_png16(rgb: &Rgb, path: &Path, meta: &ExportMetadata) -> image::ImageResult<()> {
+    let (w, h) = (rgb[0].width() as u32, rgb[0].height() as u32);
+    let bytes: Vec<u8> = interleave_srgb16(rgb)
+        .iter()
+        .flat_map(|v| v.to_ne_bytes())
+        .collect();
     let file = std::io::BufWriter::new(std::fs::File::create(path)?);
     let mut encoder = image::codecs::png::PngEncoder::new(file);
     encoder
         .set_exif_metadata(meta.exif_block(w, h).map_err(to_image_error)?)
         .map_err(to_image_error)?;
-    encoder.write_image(&bytes, w, h, image::ExtendedColorType::L16)
+    encoder.write_image(&bytes, w, h, image::ExtendedColorType::Rgb16)
+}
+
+/// Colour as a 16-bit sRGB TIFF with `meta` in EXIF and GPS directories. No ICC profile
+/// is embedded; the values are sRGB.
+pub fn save_tiff16(rgb: &Rgb, path: &Path, meta: &ExportMetadata) -> image::ImageResult<()> {
+    let bytes = meta
+        .tiff16(
+            rgb[0].width() as u32,
+            rgb[0].height() as u32,
+            3,
+            &interleave_srgb16(rgb),
+        )
+        .map_err(to_image_error)?;
+    std::fs::write(path, bytes)?;
+    Ok(())
 }
 
 /// Resample a plane (linear light) so its long edge is `long_edge` pixels, with a
@@ -315,16 +343,95 @@ pub fn resize_long_edge(plane: &Plane, long_edge: usize) -> Plane {
     Plane::from_vec(nw as usize, nh as usize, data).expect("sizes match")
 }
 
+/// [`resize_long_edge`] on each channel.
+pub fn resize_rgb_long_edge(rgb: &Rgb, long_edge: usize) -> Rgb {
+    [
+        resize_long_edge(&rgb[0], long_edge),
+        resize_long_edge(&rgb[1], long_edge),
+        resize_long_edge(&rgb[2], long_edge),
+    ]
+}
+
+// Greyscale output (black-and-white prints)
+
+/// Linear reflectance as 8-bit sRGB grey.
+pub fn plane_to_srgb_gray8(plane: &Plane) -> Vec<u8> {
+    plane
+        .data()
+        .par_iter()
+        .map(|&v| to_u8(linear_to_srgb(v)))
+        .collect()
+}
+
+/// Reflectance (relative to paper white) as an 8-bit sRGB PNG.
+pub fn save_grey_png(plane: &Plane, path: &Path) -> image::ImageResult<()> {
+    let buf: ImageBuffer<Luma<u8>, Vec<u8>> = ImageBuffer::from_raw(
+        plane.width() as u32,
+        plane.height() as u32,
+        plane_to_srgb_gray8(plane),
+    )
+    .expect("buffer matches dimensions");
+    buf.save(path)
+}
+
+fn srgb16(plane: &Plane) -> Vec<u16> {
+    plane
+        .data()
+        .par_iter()
+        .map(|&v| (linear_to_srgb(v) * 65535.0 + 0.5) as u16)
+        .collect()
+}
+
+/// Reflectance as an 8-bit greyscale JPEG (sRGB transfer curve) at `quality` 1–100,
+/// with `meta` written as an EXIF segment.
+pub fn save_grey_jpeg(
+    plane: &Plane,
+    path: &Path,
+    quality: u8,
+    meta: &ExportMetadata,
+) -> image::ImageResult<()> {
+    let (w, h) = (plane.width() as u32, plane.height() as u32);
+    let data = plane_to_srgb_gray8(plane);
+    let file = std::io::BufWriter::new(std::fs::File::create(path)?);
+    let mut encoder =
+        image::codecs::jpeg::JpegEncoder::new_with_quality(file, quality.clamp(1, 100));
+    encoder
+        .set_exif_metadata(meta.exif_block(w, h).map_err(to_image_error)?)
+        .map_err(to_image_error)?;
+    encoder.write_image(&data, w, h, image::ExtendedColorType::L8)
+}
+
+/// Reflectance as a 16-bit greyscale PNG (sRGB transfer curve) with an eXIf chunk.
+pub fn save_grey_png16(
+    plane: &Plane,
+    path: &Path,
+    meta: &ExportMetadata,
+) -> image::ImageResult<()> {
+    let (w, h) = (plane.width() as u32, plane.height() as u32);
+    let bytes: Vec<u8> = srgb16(plane).iter().flat_map(|v| v.to_ne_bytes()).collect();
+    let file = std::io::BufWriter::new(std::fs::File::create(path)?);
+    let mut encoder = image::codecs::png::PngEncoder::new(file);
+    encoder
+        .set_exif_metadata(meta.exif_block(w, h).map_err(to_image_error)?)
+        .map_err(to_image_error)?;
+    encoder.write_image(&bytes, w, h, image::ExtendedColorType::L16)
+}
+
 /// Reflectance as a 16-bit greyscale TIFF with the sRGB transfer curve, suitable for
 /// viewing and editing applications, with `meta` in EXIF and GPS directories. No ICC
 /// profile is embedded.
-pub fn save_print_tiff16(
+pub fn save_grey_tiff16(
     plane: &Plane,
     path: &Path,
     meta: &ExportMetadata,
 ) -> image::ImageResult<()> {
     let bytes = meta
-        .tiff16(plane.width() as u32, plane.height() as u32, &srgb16(plane))
+        .tiff16(
+            plane.width() as u32,
+            plane.height() as u32,
+            1,
+            &srgb16(plane),
+        )
         .map_err(to_image_error)?;
     std::fs::write(path, bytes)?;
     Ok(())
@@ -343,10 +450,15 @@ pub fn save_linear_tiff16(plane: &Plane, path: &Path) -> image::ImageResult<()> 
     buf.save(path)
 }
 
-/// The negative as seen on a light box: transmittance relative to clear base.
-pub fn save_negative_png(negative: &Negative, path: &Path) -> image::ImageResult<()> {
-    let base = negative.base_plus_fog as f32;
-    let d = &negative.density;
+/// A negative's `density` as seen on a light box: transmittance relative to clear base
+/// (`base_plus_fog`).
+pub fn save_negative_png(
+    density: &Plane,
+    base_plus_fog: f64,
+    path: &Path,
+) -> image::ImageResult<()> {
+    let base = base_plus_fog as f32;
+    let d = density;
     let data: Vec<u8> = d
         .data()
         .par_iter()
@@ -411,33 +523,56 @@ mod tests {
     }
 
     #[test]
-    fn writes_jpeg_and_png_and_resizes() {
-        let dir = std::env::temp_dir().join(format!("bw-io-test-{}", std::process::id()));
+    fn writes_jpeg_png_and_tiff_in_colour_and_resizes() {
+        let dir = std::env::temp_dir().join(format!("fd-io-test-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
-        let plane = Plane::from_fn(300, 200, |x, _| x as f32 / 300.0).unwrap();
-        let small = resize_long_edge(&plane, 150);
-        assert_eq!((small.width(), small.height()), (150, 100));
-        assert_eq!(resize_long_edge(&plane, 1000).width(), 300);
+        let ramp = |k: f32| Plane::from_fn(300, 200, move |x, _| k * x as f32 / 300.0).unwrap();
+        let rgb: Rgb = [ramp(1.0), ramp(0.5), ramp(0.25)];
+        let small = resize_rgb_long_edge(&rgb, 150);
+        assert_eq!((small[0].width(), small[0].height()), (150, 100));
+        assert_eq!(resize_long_edge(&rgb[0], 1000).width(), 300);
 
         let (hi, lo) = (dir.join("q95.jpg"), dir.join("q20.jpg"));
         let meta = ExportMetadata {
             software: "test".into(),
             ..Default::default()
         };
-        save_print_jpeg(&plane, &hi, 95, &meta).unwrap();
-        save_print_jpeg(&plane, &lo, 20, &meta).unwrap();
+        save_jpeg(&rgb, &hi, 95, &meta).unwrap();
+        save_jpeg(&rgb, &lo, 20, &meta).unwrap();
         assert!(std::fs::metadata(&hi).unwrap().len() > std::fs::metadata(&lo).unwrap().len());
         assert!(matches!(
             image::open(&hi).unwrap(),
-            DynamicImage::ImageLuma8(_)
+            DynamicImage::ImageRgb8(_)
         ));
 
         let png = dir.join("p.png");
-        save_print_png16(&plane, &png, &meta).unwrap();
+        save_png16(&rgb, &png, &meta).unwrap();
         assert!(matches!(
             image::open(&png).unwrap(),
+            DynamicImage::ImageRgb16(_)
+        ));
+
+        let grey = dir.join("g.png");
+        save_grey_png16(&rgb[0], &grey, &meta).unwrap();
+        assert!(matches!(
+            image::open(&grey).unwrap(),
             DynamicImage::ImageLuma16(_)
         ));
+        let grey_tif = dir.join("g.tif");
+        save_grey_tiff16(&rgb[0], &grey_tif, &meta).unwrap();
+        assert!(matches!(
+            image::open(&grey_tif).unwrap(),
+            DynamicImage::ImageLuma16(_)
+        ));
+
+        let tif = dir.join("t.tif");
+        save_tiff16(&rgb, &tif, &meta).unwrap();
+        let DynamicImage::ImageRgb16(buf) = image::open(&tif).unwrap() else {
+            panic!("not 16-bit RGB")
+        };
+        // Right edge: red brightest, then green, then blue.
+        let p = buf.get_pixel(299, 10).0;
+        assert!(p[0] > p[1] && p[1] > p[2], "{p:?}");
         std::fs::remove_dir_all(&dir).unwrap();
     }
 

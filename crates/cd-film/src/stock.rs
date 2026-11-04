@@ -6,7 +6,7 @@
 //! The product names describe the intended target only. See design 0001 §8 for how
 //! datasheet calibration will replace them, as BW Darkroom did for its films.
 
-use cd_core::CalibrationLevel;
+use fd_core::CalibrationLevel;
 
 /// Layer order everywhere: red-sensitive (cyan dye), green-sensitive (magenta dye),
 /// blue-sensitive (yellow dye). Display and scene channels are R, G, B in the same order.

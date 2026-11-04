@@ -7,6 +7,6 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-bw-core = { path = "../bw-core" }
+fd-core = { path = "../fd-core" }
 bw-negative = { path = "../bw-negative" }
 rayon.workspace = true

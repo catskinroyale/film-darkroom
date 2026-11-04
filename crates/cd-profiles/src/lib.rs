@@ -2,10 +2,10 @@
 //! serialisable recipe. The desktop app and the CLI render through [`render`] and
 //! [`render_region`].
 
-use cd_core::{CalibrationLevel, FilmGeometry, GeometryError, SceneImage};
 use cd_film::{
     Developed, FilmStock, GrainAdjust, LightEffects, PrintStock, Printing, Region, RenderOptions,
 };
+use fd_core::{CalibrationLevel, FilmGeometry, GeometryError, SceneImage};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -453,7 +453,7 @@ pub fn builtin_styles() -> Vec<Style> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cd_core::Plane;
+    use fd_core::Plane;
 
     #[test]
     fn builtins_resolve_and_have_unique_names() {

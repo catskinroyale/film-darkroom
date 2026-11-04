@@ -3,9 +3,9 @@
 use std::fmt::Write as _;
 use std::path::Path;
 
-use bw_core::FilmGeometry;
 use bw_developer::{Agitation, ProcessingConditions};
 use bw_negative::sensitometry::IsoSpeed;
+use fd_core::FilmGeometry;
 
 pub struct Entry {
     pub stem: String,

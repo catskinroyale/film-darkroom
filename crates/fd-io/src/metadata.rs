@@ -31,7 +31,7 @@ pub struct Exif {
 pub struct ExportMetadata {
     /// The source's EXIF, if it had any.
     pub exif: Option<Exif>,
-    /// Value of the Software tag, e.g. "BW Darkroom 0.1.0".
+    /// Value of the Software tag, e.g. "Film Darkroom 0.12.0".
     pub software: String,
     /// Development recipe for the UserComment tag.
     pub comment: Option<String>,
@@ -176,9 +176,19 @@ impl ExportMetadata {
         Ok(out.into_inner())
     }
 
-    /// A complete 16-bit greyscale TIFF (uncompressed, little-endian) with this
-    /// metadata in proper EXIF and GPS directories. `samples` are row-major.
-    pub fn tiff16(&self, width: u32, height: u32, samples: &[u16]) -> Result<Vec<u8>, String> {
+    /// A complete 16-bit TIFF (uncompressed, little-endian) with this metadata in proper
+    /// EXIF and GPS directories: greyscale for 1 channel, RGB for 3. `samples` are
+    /// row-major and interleaved.
+    pub fn tiff16(
+        &self,
+        width: u32,
+        height: u32,
+        channels: u16,
+        samples: &[u16],
+    ) -> Result<Vec<u8>, String> {
+        if channels != 1 && channels != 3 {
+            return Err(format!("unsupported channel count {channels}"));
+        }
         const ROWS_PER_STRIP: u32 = 64;
         let mut fields = self.fields(width, height);
         let short = |tag, v: u16| field(tag, Value::Short(vec![v]));
@@ -186,10 +196,17 @@ impl ExportMetadata {
         fields.extend([
             field(Tag::ImageWidth, Value::Long(vec![width])),
             field(Tag::ImageLength, Value::Long(vec![height])),
-            short(Tag::BitsPerSample, 16),
+            field(
+                Tag::BitsPerSample,
+                Value::Short(vec![16; channels as usize]),
+            ),
             short(Tag::Compression, 1),
-            short(Tag::PhotometricInterpretation, 1), // black is zero
-            short(Tag::SamplesPerPixel, 1),
+            // 1: greyscale, black is zero; 2: RGB.
+            short(
+                Tag::PhotometricInterpretation,
+                if channels == 3 { 2 } else { 1 },
+            ),
+            short(Tag::SamplesPerPixel, channels),
             short(Tag::PlanarConfiguration, 1),
             field(Tag::RowsPerStrip, Value::Long(vec![ROWS_PER_STRIP])),
             field(Tag::XResolution, resolution.clone()),
@@ -197,7 +214,7 @@ impl ExportMetadata {
             short(Tag::ResolutionUnit, 2), // inches
         ]);
         let bytes: Vec<u8> = samples.iter().flat_map(|v| v.to_le_bytes()).collect();
-        let strip_len = (width * ROWS_PER_STRIP * 2) as usize;
+        let strip_len = (width * ROWS_PER_STRIP * 2 * u32::from(channels)) as usize;
         let strips: Vec<&[u8]> = bytes.chunks(strip_len.max(1)).collect();
         let mut writer = Writer::new();
         for f in &fields {
@@ -236,8 +253,8 @@ mod tests {
     fn meta() -> ExportMetadata {
         ExportMetadata {
             exif: Some(sample_exif()),
-            software: "BW Darkroom test".into(),
-            comment: Some("Tri-X D-76".into()),
+            software: "Film Darkroom test".into(),
+            comment: Some("Portra 400".into()),
         }
     }
 
@@ -264,19 +281,19 @@ mod tests {
             Some("row 0 at top and column 0 at left")
         );
         assert_eq!(get(Tag::PixelXDimension).as_deref(), Some("640"));
-        assert!(get(Tag::Software).unwrap().contains("BW Darkroom"));
+        assert!(get(Tag::Software).unwrap().contains("Film Darkroom"));
         let comment = parsed.get_field(Tag::UserComment, In::PRIMARY).unwrap();
         let Value::Undefined(bytes, _) = &comment.value else {
             panic!("UserComment type")
         };
-        assert!(bytes.starts_with(b"ASCII\0\0\0") && bytes.ends_with(b"Tri-X D-76"));
+        assert!(bytes.starts_with(b"ASCII\0\0\0") && bytes.ends_with(b"Portra 400"));
     }
 
     #[test]
     fn tiff16_is_a_readable_image_with_exif() {
         let (w, h) = (130u32, 70u32);
         let samples: Vec<u16> = (0..w * h).map(|i| (i * 7 % 65536) as u16).collect();
-        let bytes = meta().tiff16(w, h, &samples).unwrap();
+        let bytes = meta().tiff16(w, h, 1, &samples).unwrap();
         let img = image::load_from_memory(&bytes).unwrap();
         assert_eq!((img.width(), img.height()), (w, h));
         let image::DynamicImage::ImageLuma16(buf) = img else {
@@ -305,7 +322,7 @@ mod tests {
     fn works_without_source_exif() {
         let m = ExportMetadata {
             exif: None,
-            software: "BW Darkroom".into(),
+            software: "Colour Darkroom".into(),
             comment: None,
         };
         let parsed = parse(m.exif_block(10, 10).unwrap());

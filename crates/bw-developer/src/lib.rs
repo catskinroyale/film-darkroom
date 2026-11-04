@@ -12,7 +12,7 @@
 //! `s` is the speed gain with development (design 0002): longer development moves the
 //! curve to lower exposure, as every published Tri-X family shows in its toe.
 
-use bw_core::{MonotoneCurve, Provenance};
+use fd_core::{MonotoneCurve, Provenance};
 
 /// Agitation scheme. Mapped to an agitation index in [0, 1] (0 = stand, 1 = continuous).
 #[derive(Clone, Copy, Debug, PartialEq)]

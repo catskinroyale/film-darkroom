@@ -1,6 +1,6 @@
 [package]
-name = "bw-core"
-description = "Numerical foundations for the black-and-white emulation engine: planes, film geometry, monotone curves, deterministic noise, filters."
+name = "fd-core"
+description = "Numerical foundations for the film emulation engines: planes, scenes, film geometry, monotone curves, deterministic noise, filters."
 edition.workspace = true
 version.workspace = true
 license = "MIT"

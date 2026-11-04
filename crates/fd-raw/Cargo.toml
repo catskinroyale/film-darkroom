@@ -1,5 +1,5 @@
 [package]
-name = "bw-raw"
+name = "fd-raw"
 description = "Camera raw input: decoding, white balance, highlight handling and colour conversion to the engine's scene-linear working space."
 edition.workspace = true
 version.workspace = true
@@ -7,9 +7,8 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-bw-core = { path = "../bw-core" }
-bw-negative = { path = "../bw-negative" }
-bw-io = { path = "../bw-io" }
+fd-core = { path = "../fd-core" }
+fd-io = { path = "../fd-io" }
 lightcraft-raw = { workspace = true }
 lightcraft-color = { workspace = true }
 lightcraft-raster = { workspace = true }

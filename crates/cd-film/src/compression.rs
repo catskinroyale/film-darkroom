@@ -19,7 +19,7 @@
 //! It is a creative control in the spirit of the film's own shoulder, not a separate
 //! physical stage: the film's curve still applies afterwards.
 
-use cd_core::Plane;
+use fd_core::Plane;
 use rayon::prelude::*;
 
 use crate::GREY;

@@ -217,30 +217,21 @@ checksum = "72f5acc6cb2ba439de613abc23857ec3d78374d8ed5ac84e9d11336e87da8649"
 name = "bw-cli"
 version = "0.11.1"
 dependencies = [
- "bw-core",
  "bw-darkroom",
  "bw-developer",
  "bw-film",
- "bw-io",
  "bw-negative",
  "clap",
-]
-
-[[package]]
-name = "bw-core"
-version = "0.11.1"
-dependencies = [
- "proptest",
- "rayon",
- "thiserror 2.0.21",
+ "fd-core",
+ "fd-io",
 ]
 
 [[package]]
 name = "bw-darkroom"
 version = "0.11.1"
 dependencies = [
- "bw-core",
  "bw-negative",
+ "fd-core",
  "rayon",
 ]
 
@@ -248,13 +239,13 @@ dependencies = [
 name = "bw-desktop"
 version = "0.11.1"
 dependencies = [
- "bw-core",
- "bw-io",
  "bw-negative",
  "bw-profiles",
- "bw-raw",
  "dirs",
  "eframe",
+ "fd-core",
+ "fd-io",
+ "fd-raw",
  "image",
  "kamadak-exif",
  "muda",
@@ -268,34 +259,23 @@ dependencies = [
 name = "bw-developer"
 version = "0.11.1"
 dependencies = [
- "bw-core",
+ "fd-core",
 ]
 
 [[package]]
 name = "bw-film"
 version = "0.11.1"
 dependencies = [
- "bw-core",
-]
-
-[[package]]
-name = "bw-io"
-version = "0.11.1"
-dependencies = [
- "bw-core",
- "bw-negative",
- "image",
- "kamadak-exif",
- "rayon",
+ "fd-core",
 ]
 
 [[package]]
 name = "bw-negative"
 version = "0.11.1"
 dependencies = [
- "bw-core",
  "bw-developer",
  "bw-film",
+ "fd-core",
  "rayon",
 ]
 
@@ -303,29 +283,11 @@ dependencies = [
 name = "bw-profiles"
 version = "0.11.1"
 dependencies = [
- "bw-core",
  "bw-darkroom",
  "bw-developer",
  "bw-film",
  "bw-negative",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "bw-raw"
-version = "0.11.1"
-dependencies = [
- "bw-core",
- "bw-io",
- "bw-negative",
- "image",
- "lightcraft-color",
- "lightcraft-geom",
- "lightcraft-raster",
- "lightcraft-raw",
- "rayon",
+ "fd-core",
  "serde",
  "serde_json",
  "thiserror 2.0.21",
@@ -393,33 +355,24 @@ dependencies = [
 name = "cd-cli"
 version = "0.11.1"
 dependencies = [
- "cd-core",
- "cd-io",
  "cd-profiles",
- "cd-raw",
  "clap",
+ "fd-core",
+ "fd-io",
+ "fd-raw",
  "rayon",
-]
-
-[[package]]
-name = "cd-core"
-version = "0.11.1"
-dependencies = [
- "proptest",
- "rayon",
- "thiserror 2.0.21",
 ]
 
 [[package]]
 name = "cd-desktop"
 version = "0.11.1"
 dependencies = [
- "cd-core",
- "cd-io",
  "cd-profiles",
- "cd-raw",
  "dirs",
  "eframe",
+ "fd-core",
+ "fd-io",
+ "fd-raw",
  "image",
  "kamadak-exif",
  "muda",
@@ -433,17 +386,7 @@ dependencies = [
 name = "cd-film"
 version = "0.11.1"
 dependencies = [
- "cd-core",
- "rayon",
-]
-
-[[package]]
-name = "cd-io"
-version = "0.11.1"
-dependencies = [
- "cd-core",
- "image",
- "kamadak-exif",
+ "fd-core",
  "rayon",
 ]
 
@@ -451,25 +394,8 @@ dependencies = [
 name = "cd-profiles"
 version = "0.11.1"
 dependencies = [
- "cd-core",
  "cd-film",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "cd-raw"
-version = "0.11.1"
-dependencies = [
- "cd-core",
- "cd-io",
- "image",
- "lightcraft-color",
- "lightcraft-geom",
- "lightcraft-raster",
- "lightcraft-raw",
- "rayon",
+ "fd-core",
  "serde",
  "serde_json",
  "thiserror 2.0.21",
@@ -970,6 +896,42 @@ name = "fax"
 version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "caf1079563223d5d59d83c85886a56e586cfd5c1a26292e971a0fa266531ac5a"
+
+[[package]]
+name = "fd-core"
+version = "0.11.1"
+dependencies = [
+ "proptest",
+ "rayon",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "fd-io"
+version = "0.11.1"
+dependencies = [
+ "fd-core",
+ "image",
+ "kamadak-exif",
+ "rayon",
+]
+
+[[package]]
+name = "fd-raw"
+version = "0.11.1"
+dependencies = [
+ "fd-core",
+ "fd-io",
+ "image",
+ "lightcraft-color",
+ "lightcraft-geom",
+ "lightcraft-raster",
+ "lightcraft-raw",
+ "rayon",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
 
 [[package]]
 name = "fdeflate"
