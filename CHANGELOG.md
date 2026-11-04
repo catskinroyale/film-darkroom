@@ -42,6 +42,8 @@ white continues from BW Darkroom 0.11.1; colour arrives from Colour Darkroom (un
   `.fd.json` opens with its `.bw.json` or `.cd.json` adjustments. Neither app's files are
   ever changed, so both keep working.
 - The `bw` and `colour` command-line tools are replaced by `film`.
+- **New app icon**: a strip of 35 mm film on a lightbox, holding the same sunset in a
+  colour frame and a black-and-white frame.
 
 ## [0.11.1] - 2026-10-26
 

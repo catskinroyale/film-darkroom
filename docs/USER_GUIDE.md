@@ -1,3 +1,5 @@
+<img src="images/icon-256.png" width="96" height="96" align="right" alt="Film Darkroom icon: a film strip with the same sunset in colour and in black and white">
+
 # Film Darkroom user guide
 
 Film Darkroom turns your photographs into film prints by simulating the film and the
@@ -54,7 +56,19 @@ see its effect on the rest.
 
 ## Installing
 
-Film Darkroom runs on Apple Silicon Macs.
+Film Darkroom runs on Apple Silicon Macs. Its icon is a strip of film on a lightbox, the
+same sunset in a colour frame and a black-and-white frame.
+
+**Before the first release**, run it from the source code (needs [Rust](https://rustup.rs);
+the first build takes a few minutes):
+
+```sh
+git clone https://github.com/catskinroyale/film-darkroom.git
+cd film-darkroom
+cargo run --release -p fd-desktop -- ~/Pictures
+```
+
+**Once it's released:**
 
 1. Download `Film-Darkroom-<version>-arm64.dmg` from the
    [releases page](https://github.com/catskinroyale/film-darkroom/releases).
@@ -86,7 +100,13 @@ installed without you.
 ## Colour or black and white
 
 The **Colour | B&W** switch in the top bar (or **M**) chooses the process you're working
-in. It decides:
+in.
+
+![Film Darkroom in colour: the doorway photo side by side, original and Portra 400, with colour style previews and the Film section](images/screenshot-colour.jpg)
+
+![Film Darkroom in black and white: the same photo side by side, original and Tri-X in D-76, with black-and-white style previews and the Development section](images/screenshot-bw.jpg)
+
+The switch decides:
 
 - which styles the **Style** picker, the **Styles** panel and the column of previews show;
 - which sections the **Develop** panel has (black and white: Film, Development, Film

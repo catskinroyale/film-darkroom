@@ -1,6 +1,8 @@
-# Film Darkroom
+<p align="center">
+  <img src="docs/images/icon-256.png" width="128" height="128" alt="Film Darkroom icon: a strip of 35 mm film on a lightbox, holding the same sunset in a colour frame and a black-and-white frame">
+</p>
 
-![Film Darkroom in colour: a raw photo of an arched stone doorway shown side by side, the original next to the print rendered as Portra 400 scanned, with the Colour / B&W switch in the top bar, the folder tree, the column of colour style previews, the comparison toolbar, the image strip, the Develop panel and the tool strip](docs/images/screenshot-preview.jpg)
+# Film Darkroom
 
 A film emulation engine in Rust for colour and black and white, with a desktop app and a
 command-line tool. It turns digital raw files (NEF, DNG, ARW) into film prints by modelling
@@ -12,9 +14,13 @@ the film rather than grading the image:
   effects, halation, per-layer grain, a lab that times each print to grey, and paper,
   cinema print film or a neutral scan.
 
-One switch in the app chooses the process. Film Darkroom combines and replaces
-BW Darkroom (black and white, versions 0.1–0.11) and Colour Darkroom (colour, unreleased);
-it reads their styles and per-photo adjustments, and never changes them.
+One switch in the app, **Colour | B&W**, chooses the process. Film Darkroom combines and
+replaces BW Darkroom (black and white, versions 0.1–0.11) and Colour Darkroom (colour,
+unreleased); it reads their styles and per-photo adjustments, and never changes them.
+
+| Colour | Black and white |
+|---|---|
+| ![Film Darkroom in colour: a raw photo of an arched stone doorway side by side, the original next to the print rendered as Portra 400 scanned, with the folder tree, the column of colour style previews, the image strip and the Develop panel showing the Image and Film sections](docs/images/screenshot-colour.jpg) | ![Film Darkroom in black and white: the same doorway side by side, the original next to the print rendered as Tri-X developed in D-76, with the column of black-and-white style previews and the Develop panel showing the Image, Film and Development sections](docs/images/screenshot-bw.jpg) |
 
 > **Status:** early prototype.
 >
@@ -30,11 +36,20 @@ it reads their styles and per-photo adjustments, and never changes them.
 >
 > Product names describe the intended look only.
 
-## Download
+## Get it
 
-Film Darkroom has not been released yet. BW Darkroom's releases (black and white only)
-remain at [catskinroyale/bnw-darkroom](https://github.com/catskinroyale/bnw-darkroom/releases).
-Once released:
+Film Darkroom has no release yet, so for now build it from source (a few minutes, see
+[Build and run](#build-and-run)):
+
+```sh
+git clone https://github.com/catskinroyale/film-darkroom.git
+cd film-darkroom
+cargo run --release -p fd-desktop -- ~/Pictures
+```
+
+BW Darkroom's releases (black and white only) remain at
+[catskinroyale/bnw-darkroom](https://github.com/catskinroyale/bnw-darkroom/releases).
+Once Film Darkroom is released:
 
 - Open the [latest release](https://github.com/catskinroyale/film-darkroom/releases/latest)
   and download `Film-Darkroom-<version>-arm64.dmg` from its Assets.
@@ -44,8 +59,8 @@ Once released:
   or allow it in System Settings → Privacy & Security.
 
 To use the app, see the [user guide](docs/USER_GUIDE.md). For a longer tour of the
-black-and-white process with screenshots, read the [article](docs/article/article.md). To
-build it yourself, see [Build and run](#build-and-run).
+black-and-white process with screenshots, read the [article](docs/article/article.md)
+(written for BW Darkroom; the black-and-white mode works the same way).
 
 ## Films and prints
 
@@ -79,7 +94,9 @@ build it yourself, see [Build and run](#build-and-run).
 
 ## Build and run
 
-Requires the Rust toolchain pinned in `rust-toolchain.toml` (installed automatically by rustup).
+Requires [Rust](https://rustup.rs) on macOS (Apple Silicon); the toolchain pinned in
+`rust-toolchain.toml` is installed automatically by rustup. Raw decoding comes from
+LightCraft's repository on GitHub, so the first build needs a network connection.
 
 ```sh
 cargo test --release                                     # all tests
