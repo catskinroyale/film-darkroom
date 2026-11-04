@@ -227,26 +227,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bw-desktop"
-version = "0.11.1"
-dependencies = [
- "dirs",
- "eframe",
- "fd-core",
- "fd-io",
- "fd-profiles",
- "fd-raw",
- "image",
- "kamadak-exif",
- "mono-negative",
- "muda",
- "rfd",
- "serde",
- "serde_json",
- "ureq",
-]
-
-[[package]]
 name = "bytemuck"
 version = "1.25.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -314,25 +294,6 @@ dependencies = [
  "fd-profiles",
  "fd-raw",
  "rayon",
-]
-
-[[package]]
-name = "cd-desktop"
-version = "0.11.1"
-dependencies = [
- "dirs",
- "eframe",
- "fd-core",
- "fd-io",
- "fd-profiles",
- "fd-raw",
- "image",
- "kamadak-exif",
- "muda",
- "rfd",
- "serde",
- "serde_json",
- "ureq",
 ]
 
 [[package]]
@@ -846,6 +807,25 @@ dependencies = [
  "proptest",
  "rayon",
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "fd-desktop"
+version = "0.11.1"
+dependencies = [
+ "dirs",
+ "eframe",
+ "fd-core",
+ "fd-io",
+ "fd-profiles",
+ "fd-raw",
+ "image",
+ "kamadak-exif",
+ "muda",
+ "rfd",
+ "serde",
+ "serde_json",
+ "ureq",
 ]
 
 [[package]]

@@ -12,6 +12,8 @@ use mono_negative::{
     sensitometry,
 };
 use serde::{Deserialize, Serialize};
+
+pub use mono_negative::times::{TimeLookup, TimeOrigin};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -499,6 +501,11 @@ pub fn papers() -> Vec<(&'static str, &'static str)> {
         .into_iter()
         .map(|p| (p.id(), mono_darkroom::PaperFamily::get(p).name))
         .collect()
+}
+
+/// The paper's display name (the default paper for an empty or unknown id).
+pub fn paper_label(paper: &str) -> &'static str {
+    mono_darkroom::PaperFamily::get(mono_darkroom::Paper::from_id(paper)).name
 }
 
 pub fn paper_readout(paper: &str, grade: f64) -> PaperReadout {

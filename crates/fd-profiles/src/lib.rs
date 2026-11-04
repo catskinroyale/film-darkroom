@@ -153,6 +153,66 @@ impl Style {
     }
 }
 
+/// Display values describing a style's process, for export file names and labels.
+#[derive(Clone, Debug, PartialEq)]
+pub struct NameParts {
+    pub film: String,
+    /// Developer and dilution; for colour, the chemistry (C-41, ECN-2, E-6).
+    pub developer: String,
+    /// Exposure index the film was developed for (box speed × push).
+    pub ei: f64,
+    /// Paper (black and white), print stock or scan, or "slide".
+    pub print: String,
+    /// What an edited style is called in file names: its film and process.
+    pub edited: String,
+}
+
+impl Style {
+    pub fn name_parts(&self) -> NameParts {
+        match self {
+            Self::Mono(s) => {
+                let film = mono::film_label(&s.film);
+                let developer = mono::developer_label(&s.developer);
+                let ei = s.exposure_index;
+                NameParts {
+                    edited: format!("{film} {developer} EI{ei:.0}"),
+                    print: mono::paper_label(&s.print.paper).to_string(),
+                    film,
+                    developer,
+                    ei,
+                }
+            }
+            Self::Colour(s) => {
+                let film = colour::film_label(&s.film);
+                let stock = s.film_stock().ok();
+                let slide = stock
+                    .as_ref()
+                    .is_some_and(|f| f.kind == colour::FilmKind::Reversal);
+                let developer = if slide {
+                    "E-6"
+                } else if s.film.starts_with("vision3") {
+                    "ECN-2"
+                } else {
+                    "C-41"
+                };
+                let ei = stock.map_or(0.0, |f| (f.iso * 2f64.powf(s.push)).round());
+                let print = if slide {
+                    "slide".to_string()
+                } else {
+                    colour::print_label(&s.print)
+                };
+                NameParts {
+                    edited: format!("{film} {print}"),
+                    film,
+                    developer: developer.to_string(),
+                    ei,
+                    print,
+                }
+            }
+        }
+    }
+}
+
 /// What the Develop panel shows about the model, per process.
 pub enum ModelSummary {
     Mono(mono::ModelSummary),
@@ -359,6 +419,28 @@ mod tests {
         assert_eq!(
             Style::from_json(&colour).unwrap().process(),
             Process::Colour
+        );
+    }
+
+    #[test]
+    fn name_parts_describe_each_process() {
+        let mono = Style::Mono(mono::builtin_styles().remove(0)).name_parts();
+        assert!(mono.edited.contains("EI"), "{mono:?}");
+        assert!(!mono.print.is_empty());
+        let colour = builtin_styles()
+            .into_iter()
+            .find(|s| s.film() == "portra-400")
+            .unwrap()
+            .name_parts();
+        assert_eq!((colour.developer.as_str(), colour.ei), ("C-41", 400.0));
+        let slide = builtin_styles()
+            .into_iter()
+            .find(|s| s.film() == "velvia-50")
+            .unwrap()
+            .name_parts();
+        assert_eq!(
+            (slide.developer.as_str(), slide.print.as_str()),
+            ("E-6", "slide")
         );
     }
 
