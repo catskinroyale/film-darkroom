@@ -20,7 +20,7 @@ unreleased); it reads their styles and per-photo adjustments, and never changes 
 
 | Colour | Black and white |
 |---|---|
-| ![Film Darkroom in colour: a raw photo of an arched stone doorway side by side, the original next to the print rendered as Portra 400 scanned, with the folder tree, the column of colour style previews, the image strip and the Develop panel showing the Image and Film sections](docs/images/screenshot-colour.jpg) | ![Film Darkroom in black and white: the same doorway side by side, the original next to the print rendered as Tri-X developed in D-76, with the column of black-and-white style previews and the Develop panel showing the Image, Film and Development sections](docs/images/screenshot-bw.jpg) |
+| ![Film Darkroom in colour: a raw photo of an arched stone doorway side by side, the original next to the print rendered as Portra 400 scanned, with the folder tree, the column of colour style previews, the image strip and the Develop panel showing the Image and Film sections](docs/images/screenshot-colour-0.1.0.jpg) | ![Film Darkroom in black and white: the same doorway side by side, the original next to the print rendered as Tri-X developed in D-76, with the column of black-and-white style previews and the Develop panel showing the Image, Film and Development sections](docs/images/screenshot-bw-0.1.0.jpg) |
 
 > **Status:** early prototype.
 >
@@ -38,25 +38,18 @@ unreleased); it reads their styles and per-photo adjustments, and never changes 
 
 ## Get it
 
-Film Darkroom has no release yet, so for now build it from source (a few minutes, see
-[Build and run](#build-and-run)):
+**[Download the latest macOS app](https://github.com/catskinroyale/film-darkroom/releases/latest)**:
+open the release and download `Film-Darkroom-<version>-arm64.dmg` from its Assets. No
+compiling needed.
 
-```sh
-git clone https://github.com/catskinroyale/film-darkroom.git
-cd film-darkroom
-cargo run --release -p fd-desktop -- ~/Pictures
-```
-
-BW Darkroom's releases (black and white only) remain at
-[catskinroyale/bnw-darkroom](https://github.com/catskinroyale/bnw-darkroom/releases).
-Once Film Darkroom is released:
-
-- Open the [latest release](https://github.com/catskinroyale/film-darkroom/releases/latest)
-  and download `Film-Darkroom-<version>-arm64.dmg` from its Assets.
 - Requires a Mac with Apple Silicon (M1 or later).
 - Open the DMG and drag **Film Darkroom** to **Applications**.
 - The app isn't notarised by Apple, so open it the first time with **right-click → Open**,
   or allow it in System Settings → Privacy & Security.
+
+BW Darkroom's releases (black and white only, up to 0.11.1) remain at
+[catskinroyale/bnw-darkroom](https://github.com/catskinroyale/bnw-darkroom/releases). To
+build Film Darkroom yourself, see [Build and run](#build-and-run).
 
 To use the app, see the [user guide](docs/USER_GUIDE.md). For a longer tour of the
 black-and-white process with screenshots, read the [article](docs/article/article.md)

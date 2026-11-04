@@ -151,8 +151,9 @@ dialogs, never confirm.
   holding only an approved photo (e.g. `Pictures/Darkroom/DSC_6438.NEF` plus neutral
   empty folders) so the folder tree shows nothing personal, then check the JPEG for
   names, paths or GPS (`strings`).
-- Release (version only in `[workspace.package]` of `Cargo.toml`; Film Darkroom continues
-  BW Darkroom's numbering, so the first release is `tools/release.sh minor` → 0.12.0):
+- Release (version only in `[workspace.package]` of `Cargo.toml`). Film Darkroom numbers
+  its own versions from 0.1.0; BW Darkroom's 0.1–0.11.1 are in the changelog as
+  "BW Darkroom X.Y.Z" and their tags stay in the bnw-darkroom repo, not this one:
   ```sh
   tools/release.sh patch|minor|major      # bumps version, dates the changelog, tags
   git push && git push origin vX.Y.Z

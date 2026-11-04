@@ -31,7 +31,7 @@ pub struct Exif {
 pub struct ExportMetadata {
     /// The source's EXIF, if it had any.
     pub exif: Option<Exif>,
-    /// Value of the Software tag, e.g. "Film Darkroom 0.12.0".
+    /// Value of the Software tag, e.g. "Film Darkroom 0.1.0".
     pub software: String,
     /// Development recipe for the UserComment tag.
     pub comment: Option<String>,

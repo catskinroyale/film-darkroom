@@ -1,5 +1,5 @@
 //! Embed the git commit in the binary so every build is identifiable
-//! (`Film Darkroom 0.12.0 (cf32c9d)`). Builds outside a git checkout say "unknown".
+//! (`Film Darkroom 0.1.0 (cf32c9d)`). Builds outside a git checkout say "unknown".
 
 use std::path::Path;
 use std::process::Command;

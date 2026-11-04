@@ -59,17 +59,6 @@ see its effect on the rest.
 Film Darkroom runs on Apple Silicon Macs. Its icon is a strip of film on a lightbox, the
 same sunset in a colour frame and a black-and-white frame.
 
-**Before the first release**, run it from the source code (needs [Rust](https://rustup.rs);
-the first build takes a few minutes):
-
-```sh
-git clone https://github.com/catskinroyale/film-darkroom.git
-cd film-darkroom
-cargo run --release -p fd-desktop -- ~/Pictures
-```
-
-**Once it's released:**
-
 1. Download `Film-Darkroom-<version>-arm64.dmg` from the
    [releases page](https://github.com/catskinroyale/film-darkroom/releases).
 2. Open the DMG and drag **Film Darkroom** onto **Applications**.
@@ -79,6 +68,14 @@ cargo run --release -p fd-desktop -- ~/Pictures
 
 To update, quit the app and replace it with the new version from the DMG. Your styles
 and settings are kept.
+
+To build it from the source code instead (needs [Rust](https://rustup.rs)):
+
+```sh
+git clone https://github.com/catskinroyale/film-darkroom.git
+cd film-darkroom
+cargo run --release -p fd-desktop -- ~/Pictures
+```
 
 ### Update notices
 
@@ -102,9 +99,9 @@ installed without you.
 The **Colour | B&W** switch in the top bar (or **M**) chooses the process you're working
 in.
 
-![Film Darkroom in colour: the doorway photo side by side, original and Portra 400, with colour style previews and the Film section](images/screenshot-colour.jpg)
+![Film Darkroom in colour: the doorway photo side by side, original and Portra 400, with colour style previews and the Film section](images/screenshot-colour-0.1.0.jpg)
 
-![Film Darkroom in black and white: the same photo side by side, original and Tri-X in D-76, with black-and-white style previews and the Development section](images/screenshot-bw.jpg)
+![Film Darkroom in black and white: the same photo side by side, original and Tri-X in D-76, with black-and-white style previews and the Development section](images/screenshot-bw-0.1.0.jpg)
 
 The switch decides:
 

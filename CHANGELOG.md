@@ -45,14 +45,17 @@ white continues from BW Darkroom 0.11.1; colour arrives from Colour Darkroom (un
 - **New app icon**: a strip of 35 mm film on a lightbox, holding the same sunset in a
   colour frame and a black-and-white frame.
 
-## [0.11.1] - 2026-10-26
+## [BW Darkroom 0.11.1] - 2026-10-26
+
+Film Darkroom's black-and-white process is BW Darkroom, whose releases follow, newest
+first (github.com/catskinroyale/bnw-darkroom).
 
 ### Fixed
 - **Export file names follow your changes.** After you change a style's film, developer
   or push, `{style}` in the file name gives the film, developer and EI actually used
   instead of the saved style's name.
 
-## [0.11.0] - 2026-10-26
+## [BW Darkroom 0.11.0] - 2026-10-26
 
 ### Changed
 - **More films fitted to published curves.** T-Max 100 and T-Max 400 in D-76 are fitted
@@ -97,7 +100,7 @@ white continues from BW Darkroom 0.11.1; colour arrives from Colour Darkroom (un
 - The README showed an out-of-date screenshot: GitHub and browsers kept a cached copy
   of the reused file name. Each release's screenshot now has its own name.
 
-## [0.10.0] - 2026-10-23
+## [BW Darkroom 0.10.0] - 2026-10-23
 
 ### Changed
 - **The style gallery is a column on the left**, beside the folder tree, so larger
@@ -113,7 +116,7 @@ white continues from BW Darkroom 0.11.1; colour arrives from Colour Darkroom (un
   example folders.
 - `CLAUDE.md`: every release now refreshes the README and its screenshot first.
 
-## [0.9.0] - 2026-10-23
+## [BW Darkroom 0.9.0] - 2026-10-23
 
 ### Added
 - **Side-by-side comparison.** A toolbar of icons between the photo and the style gallery
@@ -143,7 +146,7 @@ white continues from BW Darkroom 0.11.1; colour arrives from Colour Darkroom (un
 - Folder tree rows line up with the **Folders** header: chevrons under its chevron, and
   each level indented by one icon.
 
-## [0.8.0] - 2026-10-23
+## [BW Darkroom 0.8.0] - 2026-10-23
 
 ### Changed
 - **Finding a folder and choosing a photo are now separate.**
@@ -168,7 +171,7 @@ white continues from BW Darkroom 0.11.1; colour arrives from Colour Darkroom (un
 - `docs/decisions.md`: a log of product and scope decisions. First entry: the digital look
   is deferred, and work concentrates on film, chemicals and paper.
 
-## [0.7.1] - 2026-10-23
+## [BW Darkroom 0.7.1] - 2026-10-23
 
 ### Added
 - `CLAUDE.md`: working notes for AI-assisted development (layout, commands, model
@@ -180,7 +183,7 @@ white continues from BW Darkroom 0.11.1; colour arrives from Colour Darkroom (un
   is now tied to each pixel's position in the whole frame. The Detail view therefore shows
   exactly the grain of the full-size export, and it stays aligned as you drag.
 
-## [0.7.0] - 2026-10-22
+## [BW Darkroom 0.7.0] - 2026-10-22
 
 ### Changed
 - **A new interface, following LightCraft's design.**
@@ -219,7 +222,7 @@ white continues from BW Darkroom 0.11.1; colour arrives from Colour Darkroom (un
 ### Changed
 - The README no longer has a Versioning section.
 
-## [0.6.2] - 2026-10-22
+## [BW Darkroom 0.6.2] - 2026-10-22
 
 ### Added
 - **User guide** in [docs/USER_GUIDE.md](docs/USER_GUIDE.md): installing, the window,
@@ -234,14 +237,14 @@ white continues from BW Darkroom 0.11.1; colour arrives from Colour Darkroom (un
 - The export dialog's `{ei}` token help now says "developed for" rather than "rated at",
   matching push and pull as development changes.
 
-## [0.6.1] - 2026-10-22
+## [BW Darkroom 0.6.1] - 2026-10-22
 
 ### Fixed
 - The style "…" menu's items can be clicked again. A press on any item except the one
   nearest the "…" counted as a click outside the menu, so the menu closed before the
   click finished.
 
-## [0.6.0] - 2026-10-22
+## [BW Darkroom 0.6.0] - 2026-10-22
 
 ### Added
 - **Grain controls** in the Simple and Detailed views and the style editor:
@@ -265,7 +268,7 @@ white continues from BW Darkroom 0.11.1; colour arrives from Colour Darkroom (un
   magnified crop on the left. The window also returns to its normal size if an earlier
   version saved it oversized.
 
-## [0.5.0] - 2026-10-21
+## [BW Darkroom 0.5.0] - 2026-10-21
 
 ### Added
 - **File-type filter in the file browser.** Raw files (NEF, DNG, ARW) are always listed,
@@ -289,7 +292,7 @@ white continues from BW Darkroom 0.11.1; colour arrives from Colour Darkroom (un
   1.46 to 1.25 and zone VII from 0.17 to 0.03, with zone 0 unchanged). A pull does the
   reverse. Styles saved with a pushed EI change look accordingly.
 
-## [0.4.1] - 2026-10-21
+## [BW Darkroom 0.4.1] - 2026-10-21
 
 ### Changed
 - **Compact file browser.** The left panel is now a one-line-per-file list (default
@@ -310,7 +313,7 @@ white continues from BW Darkroom 0.11.1; colour arrives from Colour Darkroom (un
   "As shot" to Custom or marks its adjustments as edited. It changes only when you move
   a slider.
 
-## [0.4.0] - 2026-10-21
+## [BW Darkroom 0.4.0] - 2026-10-21
 
 ### Added
 - **Style menu (…)** on every row of the Styles list, and on right-click of a gallery
@@ -325,7 +328,7 @@ white continues from BW Darkroom 0.11.1; colour arrives from Colour Darkroom (un
 - Screenshot test runs no longer save panel sizes and window positions into the user's
   settings.
 
-## [0.3.1] - 2026-10-21
+## [BW Darkroom 0.3.1] - 2026-10-21
 
 ### Added
 - Detail view zoom: **100%** (one image pixel per screen pixel, exact on Retina displays)
@@ -340,7 +343,7 @@ white continues from BW Darkroom 0.11.1; colour arrives from Colour Darkroom (un
 ### Changed
 - The detail window opens beside the image instead of over it.
 
-## [0.3.0] - 2026-10-21
+## [BW Darkroom 0.3.0] - 2026-10-21
 
 ### Added
 - **Kentmere Pan 100, 200 and 400** films (illustrative models; Harman publishes no curves
@@ -361,7 +364,7 @@ white continues from BW Darkroom 0.11.1; colour arrives from Colour Darkroom (un
 - The 56 mm format is labelled "6×6 / 645".
 - Development-time table: 293 curated rows.
 
-## [0.2.0] - 2026-10-20
+## [BW Darkroom 0.2.0] - 2026-10-20
 
 ### Added
 - **Camera raw support** (`crates/bw-raw`): Nikon NEF, DNG (including Leica M Monochrom)
@@ -415,7 +418,7 @@ white continues from BW Darkroom 0.11.1; colour arrives from Colour Darkroom (un
 - `{date}` and `{time}` in export names are UTC.
 - Film and developer parameters are still illustrative, not fitted to sensitometry.
 
-## [0.1.0] - 2026-10-20
+## [BW Darkroom 0.1.0] - 2026-10-20
 
 ### Added
 - Design 0001 for the negative simulation model, with verified source research.
@@ -432,21 +435,21 @@ white continues from BW Darkroom 0.11.1; colour arrives from Colour Darkroom (un
   workflow views with hover help, push/pull in stops, grain from format and enlargement,
   1:1 detail view, full-resolution TIFF export.
 
-[Unreleased]: https://github.com/catskinroyale/film-darkroom/compare/v0.11.1...HEAD
-[0.11.1]: https://github.com/catskinroyale/film-darkroom/compare/v0.11.0...v0.11.1
-[0.11.0]: https://github.com/catskinroyale/film-darkroom/compare/v0.10.0...v0.11.0
-[0.10.0]: https://github.com/catskinroyale/film-darkroom/compare/v0.9.0...v0.10.0
-[0.9.0]: https://github.com/catskinroyale/film-darkroom/compare/v0.8.0...v0.9.0
-[0.8.0]: https://github.com/catskinroyale/film-darkroom/compare/v0.7.1...v0.8.0
-[0.7.1]: https://github.com/catskinroyale/film-darkroom/compare/v0.7.0...v0.7.1
-[0.7.0]: https://github.com/catskinroyale/film-darkroom/compare/v0.6.2...v0.7.0
-[0.6.2]: https://github.com/catskinroyale/film-darkroom/compare/v0.6.1...v0.6.2
-[0.6.1]: https://github.com/catskinroyale/film-darkroom/compare/v0.6.0...v0.6.1
-[0.6.0]: https://github.com/catskinroyale/film-darkroom/compare/v0.5.0...v0.6.0
-[0.5.0]: https://github.com/catskinroyale/film-darkroom/compare/v0.4.1...v0.5.0
-[0.4.1]: https://github.com/catskinroyale/film-darkroom/compare/v0.4.0...v0.4.1
-[0.4.0]: https://github.com/catskinroyale/film-darkroom/compare/v0.3.1...v0.4.0
-[0.3.1]: https://github.com/catskinroyale/film-darkroom/compare/v0.3.0...v0.3.1
-[0.3.0]: https://github.com/catskinroyale/film-darkroom/compare/v0.2.0...v0.3.0
-[0.2.0]: https://github.com/catskinroyale/film-darkroom/compare/49d00c7...v0.2.0
-[0.1.0]: https://github.com/catskinroyale/film-darkroom/commit/49d00c7
+[Unreleased]: https://github.com/catskinroyale/film-darkroom/commits/main
+[BW Darkroom 0.11.1]: https://github.com/catskinroyale/bnw-darkroom/compare/v0.11.0...v0.11.1
+[BW Darkroom 0.11.0]: https://github.com/catskinroyale/bnw-darkroom/compare/v0.10.0...v0.11.0
+[BW Darkroom 0.10.0]: https://github.com/catskinroyale/bnw-darkroom/compare/v0.9.0...v0.10.0
+[BW Darkroom 0.9.0]: https://github.com/catskinroyale/bnw-darkroom/compare/v0.8.0...v0.9.0
+[BW Darkroom 0.8.0]: https://github.com/catskinroyale/bnw-darkroom/compare/v0.7.1...v0.8.0
+[BW Darkroom 0.7.1]: https://github.com/catskinroyale/bnw-darkroom/compare/v0.7.0...v0.7.1
+[BW Darkroom 0.7.0]: https://github.com/catskinroyale/bnw-darkroom/compare/v0.6.2...v0.7.0
+[BW Darkroom 0.6.2]: https://github.com/catskinroyale/bnw-darkroom/compare/v0.6.1...v0.6.2
+[BW Darkroom 0.6.1]: https://github.com/catskinroyale/bnw-darkroom/compare/v0.6.0...v0.6.1
+[BW Darkroom 0.6.0]: https://github.com/catskinroyale/bnw-darkroom/compare/v0.5.0...v0.6.0
+[BW Darkroom 0.5.0]: https://github.com/catskinroyale/bnw-darkroom/compare/v0.4.1...v0.5.0
+[BW Darkroom 0.4.1]: https://github.com/catskinroyale/bnw-darkroom/compare/v0.4.0...v0.4.1
+[BW Darkroom 0.4.0]: https://github.com/catskinroyale/bnw-darkroom/compare/v0.3.1...v0.4.0
+[BW Darkroom 0.3.1]: https://github.com/catskinroyale/bnw-darkroom/compare/v0.3.0...v0.3.1
+[BW Darkroom 0.3.0]: https://github.com/catskinroyale/bnw-darkroom/compare/v0.2.0...v0.3.0
+[BW Darkroom 0.2.0]: https://github.com/catskinroyale/bnw-darkroom/compare/49d00c7...v0.2.0
+[BW Darkroom 0.1.0]: https://github.com/catskinroyale/bnw-darkroom/commit/49d00c7
