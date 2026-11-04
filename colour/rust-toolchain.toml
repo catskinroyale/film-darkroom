@@ -1,4 +1,0 @@
-# Pinned for reproducible numerical output; bump deliberately.
-[toolchain]
-channel = "1.99.1"
-components = ["rustfmt", "clippy"]

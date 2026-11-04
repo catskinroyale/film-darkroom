@@ -390,6 +390,92 @@ dependencies = [
 ]
 
 [[package]]
+name = "cd-cli"
+version = "0.11.1"
+dependencies = [
+ "cd-core",
+ "cd-io",
+ "cd-profiles",
+ "cd-raw",
+ "clap",
+ "rayon",
+]
+
+[[package]]
+name = "cd-core"
+version = "0.11.1"
+dependencies = [
+ "proptest",
+ "rayon",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cd-desktop"
+version = "0.11.1"
+dependencies = [
+ "cd-core",
+ "cd-io",
+ "cd-profiles",
+ "cd-raw",
+ "dirs",
+ "eframe",
+ "image",
+ "kamadak-exif",
+ "muda",
+ "rfd",
+ "serde",
+ "serde_json",
+ "ureq",
+]
+
+[[package]]
+name = "cd-film"
+version = "0.11.1"
+dependencies = [
+ "cd-core",
+ "rayon",
+]
+
+[[package]]
+name = "cd-io"
+version = "0.11.1"
+dependencies = [
+ "cd-core",
+ "image",
+ "kamadak-exif",
+ "rayon",
+]
+
+[[package]]
+name = "cd-profiles"
+version = "0.11.1"
+dependencies = [
+ "cd-core",
+ "cd-film",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cd-raw"
+version = "0.11.1"
+dependencies = [
+ "cd-core",
+ "cd-io",
+ "image",
+ "lightcraft-color",
+ "lightcraft-geom",
+ "lightcraft-raster",
+ "lightcraft-raw",
+ "rayon",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "cfg-if"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
