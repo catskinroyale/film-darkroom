@@ -360,7 +360,7 @@ checksum = "1d07550c9036bf2ae0c684c4297d503f838287c83c53686d05370d0e139ae570"
 
 [[package]]
 name = "colour-film"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "fd-core",
  "rayon",
@@ -777,7 +777,7 @@ checksum = "caf1079563223d5d59d83c85886a56e586cfd5c1a26292e971a0fa266531ac5a"
 
 [[package]]
 name = "fd-cli"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "clap",
  "fd-core",
@@ -792,7 +792,7 @@ dependencies = [
 
 [[package]]
 name = "fd-core"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "proptest",
  "rayon",
@@ -801,7 +801,7 @@ dependencies = [
 
 [[package]]
 name = "fd-desktop"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "dirs",
  "eframe",
@@ -822,7 +822,7 @@ dependencies = [
 
 [[package]]
 name = "fd-io"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "fd-core",
  "image",
@@ -832,7 +832,7 @@ dependencies = [
 
 [[package]]
 name = "fd-profiles"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "colour-film",
  "fd-core",
@@ -847,7 +847,7 @@ dependencies = [
 
 [[package]]
 name = "fd-raw"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "fd-core",
  "fd-io",
@@ -1585,7 +1585,7 @@ dependencies = [
 
 [[package]]
 name = "mono-darkroom"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "fd-core",
  "mono-negative",
@@ -1594,21 +1594,21 @@ dependencies = [
 
 [[package]]
 name = "mono-developer"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "fd-core",
 ]
 
 [[package]]
 name = "mono-film"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "fd-core",
 ]
 
 [[package]]
 name = "mono-negative"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "fd-core",
  "mono-developer",

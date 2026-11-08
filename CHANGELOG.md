@@ -5,6 +5,8 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-08
+
 ### Added
 - **Windows.** Film Darkroom runs on 64-bit Windows 10 and 11: download
   `Film-Darkroom-<version>-x64.zip` from the release, extract it and run
@@ -465,7 +467,8 @@ first (github.com/catskinroyale/bnw-darkroom).
   workflow views with hover help, push/pull in stops, grain from format and enlargement,
   1:1 detail view, full-resolution TIFF export.
 
-[Unreleased]: https://github.com/catskinroyale/film-darkroom/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/catskinroyale/film-darkroom/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/catskinroyale/film-darkroom/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/catskinroyale/film-darkroom/releases/tag/v0.1.0
 [BW Darkroom 0.11.1]: https://github.com/catskinroyale/bnw-darkroom/compare/v0.11.0...v0.11.1
 [BW Darkroom 0.11.0]: https://github.com/catskinroyale/bnw-darkroom/compare/v0.10.0...v0.11.0
