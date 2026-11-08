@@ -8,7 +8,7 @@ record product and scope decisions there).
 ## What this is
 
 A Rust film emulation engine with two processes, black and white (`mono`) and colour, and
-a macOS desktop app (`film-darkroom`) that switches between them. It combines BW Darkroom
+a desktop app (`film-darkroom`, macOS and Windows) that switches between them. It combines BW Darkroom
 (github.com/catskinroyale/bnw-darkroom, released to 0.11.1, whose history this repo
 continues) and Colour Darkroom (github.com/catskinroyale/colour-darkroom, unreleased,
 merged in). Decision P7, design 0004.
@@ -57,7 +57,7 @@ cargo test --release -p fd-desktop -- --ignored live   # real GitHub update chec
 cargo run --release -p fd-desktop -- <folder-or-image>
 cargo run --release -p fd-cli -- sheet <raw> --out sheet.jpg   # judge looks by eye
 python3 -I tools/gen_licenses.py         # after dependency changes (About window list)
-python3 -I tools/make_icon.py packaging/macos/icon_1024.png
+python3 -I tools/make_icon.py packaging/macos/icon_1024.png packaging/windows/icon.ico
 ```
 
 Datasheet calibration (design 0002; needs a venv with pymupdf, numpy, scipy): read vector
@@ -161,5 +161,12 @@ dialogs, never confirm.
   gh release create vX.Y.Z dist/Film-Darkroom-X.Y.Z-arm64.dmg --title "Film Darkroom X.Y.Z" \
     --notes-file <changelog section> --latest
   ```
+  Publishing the release starts `.github/workflows/windows.yml`, which builds on Windows
+  and attaches `Film-Darkroom-X.Y.Z-x64.zip` (check with `gh run list`). The same
+  workflow builds and tests every push to main on Windows: keep it green.
+- **Windows code** lives behind `cfg(windows)` / `cfg(target_os = "macos")`: the drive
+  list (`browser::volumes`), "Show in Explorer", `widgets::shortcut` (⌘ vs Ctrl), the
+  window icon (`main.rs`) and the exe's icon and version details (`build.rs`,
+  `packaging/windows/icon.ico`). This Mac can't build for Windows: CI is the check.
   Before 1.0: minor = features or behaviour changes, patch = fixes.
 - Public images (README, releases) use only the author's own photos.

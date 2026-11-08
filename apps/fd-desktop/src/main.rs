@@ -4,6 +4,9 @@
 //! The app is a thin shell over the engine. All photographic work happens in the
 //! engine crates; rendering runs on background threads so the UI stays responsive.
 
+// Windows: a GUI app, no console window behind it (debug builds keep one for logs).
+#![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")]
+
 mod about;
 mod app;
 mod browser;
@@ -35,9 +38,29 @@ fn main() -> eframe::Result {
             .with_title("Film Darkroom"),
         ..Default::default()
     };
+    // macOS takes the icon from the app bundle; elsewhere the window carries it.
+    #[cfg(not(target_os = "macos"))]
+    let options = eframe::NativeOptions {
+        viewport: options.viewport.with_icon(window_icon()),
+        ..options
+    };
     eframe::run_native(
         "Film Darkroom",
         options,
         Box::new(|cc| Ok(Box::new(app::App::new(cc, start)))),
     )
+}
+
+/// The app icon for the window and taskbar (Windows, Linux).
+#[cfg(not(target_os = "macos"))]
+fn window_icon() -> eframe::egui::IconData {
+    let png = include_bytes!("../../../docs/images/icon-256.png");
+    let rgba = image::load_from_memory(png)
+        .expect("embedded icon is a valid PNG")
+        .into_rgba8();
+    eframe::egui::IconData {
+        width: rgba.width(),
+        height: rgba.height(),
+        rgba: rgba.into_raw(),
+    }
 }

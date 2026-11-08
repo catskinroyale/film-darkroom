@@ -5,6 +5,16 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+- **Windows.** Film Darkroom runs on 64-bit Windows 10 and 11: download
+  `Film-Darkroom-<version>-x64.zip` from the release, extract it and run
+  **Film Darkroom.exe**. The folder tree lists the drives (C:, D:, memory cards) after
+  Home, right-click offers **Show in Explorer**, shortcuts use **Ctrl** (Ctrl+E exports),
+  and the exe and window carry the app icon. Styles are kept in
+  `%APPDATA%\film-darkroom`. The build is not code-signed, so SmartScreen may ask once.
+- A GitHub Actions workflow builds and tests every change on Windows and attaches the
+  Windows zip to each release.
+
 ## [0.1.0] - 2026-11-04
 
 Film Darkroom: BW Darkroom and Colour Darkroom in one app and one code base. Black and

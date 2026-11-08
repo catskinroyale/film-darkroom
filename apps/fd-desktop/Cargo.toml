@@ -27,5 +27,13 @@ ureq = { version = "2", default-features = false, features = ["tls"] }
 # Native application menu (About, Hide, Quit, Window), MIT OR Apache-2.0.
 muda = { version = "0.21", default-features = false }
 
+[target.'cfg(windows)'.dependencies]
+# Drive letters for the folder tree (GetLogicalDrives), MIT OR Apache-2.0.
+windows-sys = { version = "0.61", features = ["Win32_Storage_FileSystem"] }
+
 [dev-dependencies]
 exif = { package = "kamadak-exif", version = "0.6" }
+
+[build-dependencies]
+# Windows builds: the icon and version details in the .exe (build.rs), MIT.
+winresource = "0.1.34"

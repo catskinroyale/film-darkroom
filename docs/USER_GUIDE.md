@@ -56,18 +56,30 @@ see its effect on the rest.
 
 ## Installing
 
-Film Darkroom runs on Apple Silicon Macs. Its icon is a strip of film on a lightbox, the
-same sunset in a colour frame and a black-and-white frame.
+Film Darkroom runs on Apple Silicon Macs and on 64-bit Windows 10 and 11. Its icon is a
+strip of film on a lightbox, the same sunset in a colour frame and a black-and-white
+frame. Download it from the
+[releases page](https://github.com/catskinroyale/film-darkroom/releases).
 
-1. Download `Film-Darkroom-<version>-arm64.dmg` from the
-   [releases page](https://github.com/catskinroyale/film-darkroom/releases).
+**Mac**
+
+1. Download `Film-Darkroom-<version>-arm64.dmg`.
 2. Open the DMG and drag **Film Darkroom** onto **Applications**.
 3. The first time you open it, **right-click the app → Open**, then confirm. The app isn't
    notarised by Apple, so a normal double-click is blocked the first time. You can also
    allow it in System Settings → Privacy & Security → Open Anyway.
 
-To update, quit the app and replace it with the new version from the DMG. Your styles
-and settings are kept.
+**Windows**
+
+1. Download `Film-Darkroom-<version>-x64.zip`.
+2. Right-click the zip → **Extract All…**, and put the **Film Darkroom** folder wherever
+   you keep programs (for example your Documents or `C:\Program Files`).
+3. Double-click **Film Darkroom.exe**. The app isn't code-signed, so the first time
+   Windows SmartScreen may say it protected your PC: click **More info → Run anyway**.
+   To start it from the Start menu, right-click the exe → **Pin to Start**.
+
+To update, quit the app and replace it with the new version (the app in Applications, or
+the Film Darkroom folder on Windows). Your styles and settings are kept.
 
 To build it from the source code instead (needs [Rust](https://rustup.rs)):
 
@@ -83,12 +95,13 @@ Once a day, when it starts, Film Darkroom asks GitHub whether a newer version ha
 released. If there is one, an **Update** button appears in the top bar. Click it to see
 what's new, then:
 
-- **Download…** opens the release page in your browser, with the DMG to download.
+- **Download…** opens the release page in your browser, with the DMG (Mac) and zip
+  (Windows) to download.
 - **Later** hides the dialog until next time.
 - **Skip This Version** stops the notice for that version.
 
-**Film Darkroom ▸ Check for Updates…** (or the button in the About window) checks
-straight away. To turn off the daily check, untick **Check for updates automatically** in
+**Film Darkroom ▸ Check for Updates…** on the Mac, or the button in the About window
+(**About** in the top bar on Windows), checks straight away. To turn off the daily check, untick **Check for updates automatically** in
 the Software Update window.
 
 The check sends nothing except the request itself, and nothing is downloaded or
@@ -151,7 +164,9 @@ pick a photo from the **Images** strip under the photo.
   external drive. Click a folder to show its photos in the strip; click the chevron beside
   it to show or hide its subfolders. The tree opens down to the folder you're in.
 - **Browse Folder…** at the end of the tree picks
-  any folder, such as one on a network drive. Right-click a folder for **Show in Finder**.
+  any folder, such as one on a network drive. Right-click a folder for **Show in Finder**
+  (**Show in Explorer** on Windows).
+- On Windows the drives (C:, D:, memory cards) are listed after Home.
 - Apps and other macOS packages (`.app`, Photos and Lightroom libraries) aren't listed.
 - In the strip, long file names are shortened in the middle, keeping the start and the
   frame number ("Reykjav…042.NEF"). Hover a photo to see its full name.
@@ -427,7 +442,7 @@ are renamed, and the app switches to the process of the first one imported.
 
 ## Exporting
 
-**Export…** (or **⌘E**) renders the selected photo at full resolution with the current
+**Export…** (or **⌘E**; **Ctrl+E** on Windows) renders the selected photo at full resolution with the current
 style: a greyscale file in black and white, an sRGB colour file in colour.
 
 | Option | Choices |
@@ -475,13 +490,13 @@ software is recorded as Film Darkroom, and the recipe goes in the comment field.
 | **G** | Show or hide the style column |
 | **I** | Show or hide the image strip |
 | **F** | Focus: hide or show all panels |
-| **⌘E** | Export |
+| **⌘E** (Mac), **Ctrl+E** (Windows) | Export |
 
 ## Where things are stored
 
 | What | Where |
 |---|---|
-| Your styles | `~/Library/Application Support/film-darkroom/styles.json` |
+| Your styles | Mac: `~/Library/Application Support/film-darkroom/styles.json`; Windows: `%APPDATA%\film-darkroom\styles.json` |
 | Per-photo adjustments | A `<photo>.fd.json` file next to each photo you've adjusted |
 | Exports | A `film-exports` folder next to the photo, unless you chose another folder |
 

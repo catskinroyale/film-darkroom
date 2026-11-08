@@ -163,8 +163,8 @@ pub struct Place {
 }
 
 /// The tree's top-level folders: Pictures, Desktop and Home, then mounted volumes such as
-/// memory cards and external drives (the start-up disk is left out: it is reached through
-/// Home).
+/// memory cards and external drives (on macOS the start-up disk is left out: it is reached
+/// through Home; on Windows every drive letter is listed).
 pub fn places() -> Vec<Place> {
     let mut out: Vec<Place> = [
         ("Pictures", dirs::picture_dir()),
@@ -183,19 +183,46 @@ pub fn places() -> Vec<Place> {
         })
     })
     .collect();
-    out.extend(
-        list_subfolders(Path::new("/Volumes"))
-            .into_iter()
-            .filter_map(|folder| {
-                // The start-up disk appears in /Volumes as a link to "/".
-                let target = std::fs::canonicalize(&folder.path).ok()?;
-                (target != Path::new("/")).then_some(Place {
-                    folder,
-                    drive: true,
-                })
-            }),
-    );
+    out.extend(volumes());
     out
+}
+
+/// Mounted volumes other than the start-up disk (macOS: `/Volumes`).
+#[cfg(not(windows))]
+fn volumes() -> Vec<Place> {
+    list_subfolders(Path::new("/Volumes"))
+        .into_iter()
+        .filter_map(|folder| {
+            // The start-up disk appears in /Volumes as a link to "/".
+            let target = std::fs::canonicalize(&folder.path).ok()?;
+            (target != Path::new("/")).then_some(Place {
+                folder,
+                drive: true,
+            })
+        })
+        .collect()
+}
+
+/// Windows: every drive letter in use (C:, D:, memory cards, network drives). The list
+/// comes from the system without touching the drives, so an empty card reader or a
+/// disconnected network drive never holds up the folder tree.
+#[cfg(windows)]
+fn volumes() -> Vec<Place> {
+    // SAFETY: GetLogicalDrives takes no arguments and only returns a bit mask.
+    let mask = unsafe { windows_sys::Win32::Storage::FileSystem::GetLogicalDrives() };
+    (0..26u8)
+        .filter(|i| mask & (1 << i) != 0)
+        .map(|i| {
+            let letter = (b'A' + i) as char;
+            Place {
+                folder: Folder {
+                    name: format!("{letter}:"),
+                    path: PathBuf::from(format!("{letter}:\\")),
+                },
+                drive: true,
+            }
+        })
+        .collect()
 }
 
 /// Subfolder listings for the folder tree, made on a worker thread so a slow drive or a

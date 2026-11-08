@@ -173,12 +173,26 @@ impl Tree<'_> {
             ui.data_mut(|d| d.insert_persisted(open_id, !open));
         }
         resp.context_menu(|ui| {
-            if ui
-                .button("Show in Finder")
-                .on_hover_text("Open this folder in a Finder window")
-                .clicked()
-            {
-                let _ = std::process::Command::new("open").arg(path).spawn();
+            #[cfg(target_os = "windows")]
+            let (label, help, opener) = (
+                "Show in Explorer",
+                "Open this folder in a File Explorer window",
+                "explorer",
+            );
+            #[cfg(target_os = "macos")]
+            let (label, help, opener) = (
+                "Show in Finder",
+                "Open this folder in a Finder window",
+                "open",
+            );
+            #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+            let (label, help, opener) = (
+                "Open folder",
+                "Open this folder in the file manager",
+                "xdg-open",
+            );
+            if ui.button(label).on_hover_text(help).clicked() {
+                let _ = std::process::Command::new(opener).arg(path).spawn();
                 ui.close();
             }
         });

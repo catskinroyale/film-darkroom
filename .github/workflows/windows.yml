@@ -1,0 +1,43 @@
+# Windows: build and test every push to main, and attach a Windows build to every
+# published release (the macOS DMG is built locally: tools/package-macos.sh).
+name: Windows
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: write # upload the zip to the release
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # Keep LF line endings: data files and fixtures are read byte for byte.
+      - run: git config --global core.autocrlf false
+      - uses: actions/checkout@v4
+      - name: Toolchain (rust-toolchain.toml)
+        run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - name: Clippy
+        run: cargo clippy --release --all-targets -- -D warnings
+      - name: Test
+        run: cargo test --release --workspace
+      - name: Package
+        run: tools/package-windows.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: film-darkroom-windows
+          path: dist/*.zip
+      - name: Attach to the release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" dist/*.zip --clobber

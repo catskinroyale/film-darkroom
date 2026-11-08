@@ -1,5 +1,7 @@
 //! Embed the git commit in the binary so every build is identifiable
 //! (`Film Darkroom 0.1.0 (cf32c9d)`). Builds outside a git checkout say "unknown".
+//!
+//! Windows builds also get the app icon and version details embedded in the .exe.
 
 use std::path::Path;
 use std::process::Command;
@@ -26,5 +28,16 @@ fn main() {
             "cargo:rerun-if-changed={}",
             git.join(reference.trim()).display()
         );
+    }
+
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("windows") {
+        println!("cargo:rerun-if-changed=../../packaging/windows/icon.ico");
+        let mut res = winresource::WindowsResource::new();
+        res.set_icon("../../packaging/windows/icon.ico")
+            .set("ProductName", "Film Darkroom")
+            .set("FileDescription", "Film Darkroom")
+            .set("LegalCopyright", "James Huckle; Apache-2.0 and MIT");
+        res.compile()
+            .expect("embed the Windows icon and version details");
     }
 }

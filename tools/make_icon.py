@@ -4,7 +4,10 @@
 A strip of 35 mm film lying across a lightbox, its sprocket holes lit from below. The
 strip holds two frames of the same scene, a sunset over hills: one in colour, one in
 black and white, the two processes the app prints.
-Usage: python3 -I tools/make_icon.py packaging/macos/icon_1024.png
+Usage: python3 -I tools/make_icon.py packaging/macos/icon_1024.png [packaging/windows/icon.ico]
+
+With a second path it also writes the Windows icon: 256, 128, 64, 48, 32, 24 and 16 px
+images, each averaged down from the 1024 px render, stored as PNGs inside one .ico.
 """
 import math
 import struct
@@ -15,15 +18,62 @@ N = 1024
 ANGLE = math.radians(-10)  # the strip's tilt
 
 
-def png(path, rows):
+def png_bytes(rows):
+    size = len(rows)
     raw = b"".join(b"\x00" + bytes(r) for r in rows)
 
     def chunk(t, d):
         return struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d) & 0xFFFFFFFF)
 
-    data = (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", N, N, 8, 6, 0, 0, 0))
+    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", size, size, 8, 6, 0, 0, 0))
             + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b""))
-    open(path, "wb").write(data)
+
+
+def png(path, rows):
+    open(path, "wb").write(png_bytes(rows))
+
+
+def downsample(rows, size):
+    """Area-average the RGBA rows down to size x size, in premultiplied alpha (no dark
+    fringes where the rounded corners fade out)."""
+    n = len(rows)
+    scale = n / size
+    out = []
+    for oy in range(size):
+        y0, y1 = oy * scale, (oy + 1) * scale
+        row = []
+        for ox in range(size):
+            x0, x1 = ox * scale, (ox + 1) * scale
+            acc = [0.0, 0.0, 0.0, 0.0]
+            area = 0.0
+            for y in range(int(y0), min(n, math.ceil(y1))):
+                wy = min(y + 1, y1) - max(y, y0)
+                src = rows[y]
+                for x in range(int(x0), min(n, math.ceil(x1))):
+                    w = wy * (min(x + 1, x1) - max(x, x0))
+                    a = src[4 * x + 3] / 255
+                    for c in range(3):
+                        acc[c] += src[4 * x + c] * a * w
+                    acc[3] += a * w
+                    area += w
+            alpha = acc[3] / area
+            rgb = [acc[c] / acc[3] if acc[3] > 0 else 0 for c in range(3)]
+            row += [int(round(min(255, v))) for v in rgb] + [int(round(255 * alpha))]
+        out.append(row)
+    return out
+
+
+def ico(path, rows, sizes=(256, 128, 64, 48, 32, 24, 16)):
+    """A Windows .ico holding one PNG per size (supported since Windows Vista)."""
+    images = [png_bytes(downsample(rows, s)) for s in sizes]
+    header = struct.pack("<HHH", 0, 1, len(images))
+    offset = len(header) + 16 * len(images)
+    entries, data = b"", b""
+    for s, img in zip(sizes, images):
+        # width and height 0 mean 256
+        entries += struct.pack("<BBBBHHII", s % 256, s % 256, 0, 0, 1, 32, len(img), offset + len(data))
+        data += img
+    open(path, "wb").write(header + entries + data)
 
 
 def coverage(d):
@@ -105,7 +155,7 @@ def pixel(x, y):
     return [int(max(0, min(255, ch))) for ch in c] + [int(255 * box)]
 
 
-def main(path):
+def main(path, ico_path=None):
     rows = []
     for y in range(N):
         row = []
@@ -113,7 +163,10 @@ def main(path):
             row += pixel(x + 0.5, y + 0.5)
         rows.append(row)
     png(path, rows)
+    if ico_path:
+        ico(ico_path, rows)
 
 
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else "packaging/macos/icon_1024.png")
+    main(sys.argv[1] if len(sys.argv) > 1 else "packaging/macos/icon_1024.png",
+         sys.argv[2] if len(sys.argv) > 2 else None)

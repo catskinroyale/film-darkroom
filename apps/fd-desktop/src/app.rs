@@ -2020,7 +2020,7 @@ impl App {
                 Icon::Export,
                 self.export_open,
                 can_export,
-                "Export (⌘E)",
+                &widgets::shortcut("Export", "E"),
             )
             .clicked()
             {

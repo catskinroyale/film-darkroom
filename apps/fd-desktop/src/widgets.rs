@@ -943,6 +943,16 @@ pub fn paint_icon(p: &Painter, rect: Rect, icon: Icon, color: Color32) {
     }
 }
 
+/// "Export (⌘E)" on macOS, "Export (Ctrl+E)" elsewhere: egui's `command` modifier is ⌘
+/// on macOS and Ctrl on Windows and Linux.
+pub fn shortcut(action: &str, key: &str) -> String {
+    if cfg!(target_os = "macos") {
+        format!("{action} (⌘{key})")
+    } else {
+        format!("{action} (Ctrl+{key})")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
