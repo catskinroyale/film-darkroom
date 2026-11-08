@@ -147,8 +147,11 @@ you left them. Advanced controls sit in expandable rows inside a section (for ex
 **Development details** or **Colour layers**); click a row to open it.
 
 **Sliders:** drag the track (hold **Shift** for fine control), **double-click** the
-name or the knob to reset it, or **click the value** to type one (Return applies, Esc
-cancels).
+name or the knob to put it back to where it was when the photo opened, or **click the
+value** to type one (Return applies, Esc cancels). For the Image section that's the
+photo's saved adjustments; for the style's sliders it's the style as it was when the
+photo opened, or when you last chose a style. Each photo you move to sets its own
+starting values.
 
 Panels can be resized by dragging their edges. **F** hides every panel for a clean view
 of the image and brings them back.
@@ -375,7 +378,15 @@ The defaults are exactly the film's own grain. When you change them, the readout
 
 ## Checking detail at 100% and 200%
 
-Grain and edge effects only show properly at full resolution. Press **D** (or click the
+Grain and edge effects only show properly at full resolution.
+
+**Double-click the photo** to see it at 100% (one image pixel per screen pixel), centred
+on the point you clicked. **Drag** to move around it: the view follows at once, slightly
+soft, and sharpens as the full-resolution render arrives. **Double-click again** to fit
+the whole photo back in the view. Side by side, both panes zoom and move together. Moving
+to another photo shows it fitted.
+
+For a second view while the photo stays whole, use the Detail window: press **D** (or click the
 magnifying glass in the toolbar) and click the image to choose the area. An orange outline
 shows what the Detail window displays.
 
@@ -486,6 +497,7 @@ software is recorded as Film Darkroom, and the recipe goes in the comment field.
 | **C** | Treated → Side by side → Original |
 | **O** | Original on or off |
 | **D** | Detail window on or off |
+| Double-click the photo | 100% / fit (drag to move while at 100%) |
 | **B** | Show or hide the folder tree |
 | **W** | Show or hide the Develop / Styles panel |
 | **G** | Show or hide the style column |

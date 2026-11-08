@@ -38,7 +38,7 @@ mod help {
         "Printer points of green: positive makes the print greener; negative gives magenta.";
     pub const BLUE: &str =
         "Printer points of blue: positive makes the print bluer; negative gives yellow.";
-    pub const STOCK_LOOK: &str = "Apply the lab rendering this film is known for (for example Gold's warmth, 400H's cool cast),\non top of grey timing. Off: strictly neutral greys.";
+    pub const STOCK_LOOK: &str = "Apply the lab rendering this film is known for (for example Gold's warmth, 400H's mint green),\non top of grey timing. Off: strictly neutral greys.";
     pub const SLIDE_COLOUR: &str = "Slide film has no print: these act as colour-compensating filters on the camera.\nPositive adds that colour.";
     pub const PROJECTION: &str = "Slide brightness on the light box: more makes the slide darker.";
 }

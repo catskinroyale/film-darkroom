@@ -21,7 +21,7 @@ use crate::styles::StyleStore;
 use crate::theme::Tokens;
 use crate::updates::{self, CheckResult, Release};
 use crate::widgets::{self, Icon, inset};
-use crate::worker::{self, Job, Msg};
+use crate::worker::{self, CropView, Job, Msg};
 use crate::workflow;
 use fd_raw::RawAdjust;
 
@@ -272,6 +272,14 @@ enum Tile {
 }
 
 /// Why a style can't be rendered, for its gallery tile and the image area.
+/// The slider reset scope for the style controls of `process` (`widgets::new_reset_point`).
+fn reset_scope(process: Process) -> &'static str {
+    match process {
+        Process::Mono => "mono",
+        Process::Colour => "colour",
+    }
+}
+
 fn unavailable_text(process: Process) -> (&'static str, &'static str) {
     match process {
         Process::Mono => (
@@ -288,6 +296,14 @@ fn unavailable_text(process: Process) -> (&'static str, &'static str) {
 struct LoadedImage {
     path: PathBuf,
     source: Arc<Source>,
+}
+
+/// The zoomed main view's sharp render: one crop at 100 %, before and after the film.
+struct ZoomCrop {
+    treated: TextureHandle,
+    original: TextureHandle,
+    /// The area the crop covers, as fractions of the image: `[x0, y0, x1, y1]`.
+    area: [f32; 4],
 }
 
 pub struct App {
@@ -376,6 +392,18 @@ pub struct App {
     /// The detail crop before development, for side-by-side comparison.
     detail_original: Option<TextureHandle>,
 
+    /// Main view at 100 % (double-click the photo): the image point, as fractions, at the
+    /// centre of the view. `None`: the photo is fitted to the view.
+    zoom_centre: Option<[f32; 2]>,
+    zoom_generation: u64,
+    /// Crop size in image pixels that fills one pane at 100 % (updated every frame).
+    zoom_view_px: [usize; 2],
+    /// The latest sharp render for the zoomed view; the enlarged preview fills in around
+    /// it while a drag waits for the next one.
+    zoom_crop: Option<ZoomCrop>,
+    /// The developed image's full size in pixels, as the renderer last reported it.
+    full_size: Option<[usize; 2]>,
+
     tiles_generation: u64,
     tiles: Vec<Tile>,
 
@@ -402,6 +430,8 @@ pub struct App {
     screenshot: Option<(PathBuf, std::time::Instant, bool)>,
     /// Screenshot runs: whether `FILM_DARKROOM_SCREENSHOT_THEN_PUSH` has been applied.
     screenshot_then_applied: bool,
+    /// Slider reset points to start next frame (a style was chosen; see `widgets`).
+    pending_reset_points: Vec<&'static str>,
     /// Screenshot runs: clicks still to inject, as (seconds after start, x, y, stage).
     screenshot_clicks: Vec<ScriptedPointer>,
 
@@ -554,6 +584,11 @@ impl App {
             detail_shown_generation: 0,
             detail: None,
             detail_original: None,
+            zoom_centre: None,
+            zoom_generation: 0,
+            zoom_view_px: [0, 0],
+            zoom_crop: None,
+            full_size: None,
             tiles_generation: 0,
             export,
             export_open: false,
@@ -568,6 +603,7 @@ impl App {
             #[cfg(target_os = "macos")]
             menu: crate::menu::AppMenu::install(&cc.egui_ctx),
             screenshot_then_applied: false,
+            pending_reset_points: Vec::new(),
             // `FILM_DARKROOM_SCREENSHOT_CLICKS=t:x,y;t:x,y>x2,y2` clicks at window points
             // (x, y), or drags from (x, y) to (x2, y2), t seconds after start, through
             // egui's own input: real interaction in tests.
@@ -628,6 +664,10 @@ impl App {
         self.original = None;
         self.detail = None;
         self.detail_original = None;
+        // Each photo opens fitted to the view.
+        self.zoom_centre = None;
+        self.zoom_crop = None;
+        self.full_size = None;
         self.reset_tiles();
         self.status = format!("Loading {}…", file_name(&path));
         let _ = self.jobs.send(Job::Load {
@@ -758,6 +798,52 @@ impl App {
         if self.detail_enabled {
             self.request_detail();
         }
+        self.request_zoom();
+    }
+
+    /// Render the zoomed main view's crop (when zoomed in) for the current settings.
+    fn request_zoom(&mut self) {
+        let Some(centre) = self.zoom_centre else {
+            return;
+        };
+        if self.loaded.is_none() || self.zoom_view_px[0] == 0 {
+            return;
+        }
+        self.zoom_generation += 1;
+        let _ = self.jobs.send(Job::Detail {
+            view: CropView::Main,
+            generation: self.zoom_generation,
+            style: self.draft.clone(),
+            adjust: self.adjust,
+            centre,
+            crop_px: self.zoom_view_px,
+        });
+    }
+
+    /// The developed image's full size in pixels for a view of `fitted` (the preview's
+    /// texture size): as last reported by the renderer, or, before that or after a
+    /// rotation, the source's long edge at the preview's aspect ratio.
+    fn full_size_for(&self, fitted: Vec2) -> Option<Vec2> {
+        let aspect = fitted.x / fitted.y.max(1.0);
+        if let Some([w, h]) = self.full_size {
+            let reported = Vec2::new(w as f32, h as f32);
+            if (reported.x / reported.y - aspect).abs() < 0.02 * aspect {
+                return Some(reported);
+            }
+        }
+        let source = &self.loaded.as_ref()?.source;
+        let long = match source.as_ref() {
+            Source::Raw(photo) => photo.info.width.max(photo.info.height),
+            Source::Raster(scene) => {
+                let (w, h) = scene.dimensions();
+                w.max(h)
+            }
+        } as f32;
+        Some(if aspect >= 1.0 {
+            Vec2::new(long, long / aspect)
+        } else {
+            Vec2::new(long * aspect, long)
+        })
     }
 
     fn request_detail(&mut self) {
@@ -767,14 +853,16 @@ impl App {
         self.detail_generation += 1;
         self.detail_requested_zoom = self.detail_zoom;
         self.detail_requested_centre = self.detail_centre;
+        let crop_px =
+            (DETAIL_VIEW_PT * self.pixels_per_point / f32::from(self.detail_zoom)).round() as usize;
         let _ = self.jobs.send(Job::Detail {
+            view: CropView::Detail,
             generation: self.detail_generation,
             style: self.draft.clone(),
             adjust: self.adjust,
             centre: self.detail_centre,
             // Enough image pixels to fill the view at this zoom on this screen.
-            crop_px: (DETAIL_VIEW_PT * self.pixels_per_point / f32::from(self.detail_zoom)).round()
-                as usize,
+            crop_px: [crop_px, crop_px],
         });
     }
 
@@ -814,6 +902,7 @@ impl App {
     }
 
     fn select_style(&mut self, index: usize) {
+        self.pending_reset_points.push(reset_scope(self.process));
         self.current = index;
         self.draft = self.store.entries[index].style.clone();
         self.draft_changed();
@@ -1444,6 +1533,10 @@ impl App {
                     };
                     self.loaded = Some(LoadedImage { path, source });
                     self.loading = false;
+                    // Sliders restore what they showed when this photo opened.
+                    for scope in ["image", "mono", "colour"] {
+                        widgets::new_reset_point(ctx, scope);
+                    }
                     self.request_preview();
                     self.request_tiles();
                 }
@@ -1464,11 +1557,43 @@ impl App {
                     self.preview_ms = Some(millis);
                 }
                 Msg::Detail {
+                    view: CropView::Main,
                     generation,
                     image,
                     original,
                     area,
+                    full,
+                } if generation == self.zoom_generation => {
+                    self.full_size = Some(full);
+                    // Nearest-neighbour: one texel per screen pixel, placed on the pixel grid.
+                    match &mut self.zoom_crop {
+                        Some(z) => {
+                            z.treated.set(image, TextureOptions::NEAREST);
+                            z.original.set(original, TextureOptions::NEAREST);
+                            z.area = area;
+                        }
+                        None => {
+                            self.zoom_crop = Some(ZoomCrop {
+                                treated: ctx.load_texture("zoom", image, TextureOptions::NEAREST),
+                                original: ctx.load_texture(
+                                    "zoom-original",
+                                    original,
+                                    TextureOptions::NEAREST,
+                                ),
+                                area,
+                            });
+                        }
+                    }
+                }
+                Msg::Detail {
+                    view: CropView::Detail,
+                    generation,
+                    image,
+                    original,
+                    area,
+                    full,
                 } if generation == self.detail_generation => {
+                    self.full_size = Some(full);
                     match &mut self.detail_original {
                         Some(tex) => tex.set(original, TextureOptions::NEAREST),
                         None => {
@@ -1536,6 +1661,19 @@ impl App {
     fn screenshot_hook(&mut self, ctx: &egui::Context) {
         if self.screenshot.is_none() {
             return;
+        }
+        // `FILM_DARKROOM_SCREENSHOT_ZOOM=x,y` shows the main view at 100 % centred there.
+        if let Ok(spec) = std::env::var("FILM_DARKROOM_SCREENSHOT_ZOOM")
+            && self.loaded.is_some()
+            && self.zoom_centre.is_none()
+            && self.zoom_generation == 0
+            && let [x, y] = spec
+                .split(',')
+                .filter_map(|p| p.trim().parse().ok())
+                .collect::<Vec<f32>>()[..]
+        {
+            self.zoom_centre = Some([x, y]);
+            self.request_zoom();
         }
         // `FILM_DARKROOM_SCREENSHOT_DETAIL=x,y,zoom` opens the detail view at that point.
         let detail_spec = std::env::var("FILM_DARKROOM_SCREENSHOT_DETAIL").ok();
@@ -2549,14 +2687,17 @@ impl App {
         let treated = self.preview.as_ref().or(self.original.as_ref()).cloned();
         let original = self.original.clone();
         // Each pane: its texture and, side by side, its caption.
-        let panes: Vec<(TextureHandle, Option<&str>)> = match (self.compare, original, treated) {
-            (Compare::SideBySide, Some(o), Some(t)) => {
-                vec![(o, Some("Original")), (t, Some("Treated"))]
-            }
-            (Compare::Original, Some(o), _) => vec![(o, None)],
-            (_, _, Some(t)) => vec![(t, None)],
-            _ => Vec::new(),
-        };
+        // Each pane: its texture, its caption (side by side) and whether it shows the
+        // original.
+        let panes: Vec<(TextureHandle, Option<&str>, bool)> =
+            match (self.compare, original, treated) {
+                (Compare::SideBySide, Some(o), Some(t)) => {
+                    vec![(o, Some("Original"), true), (t, Some("Treated"), false)]
+                }
+                (Compare::Original, Some(o), _) => vec![(o, None, true)],
+                (_, _, Some(t)) => vec![(t, None, false)],
+                _ => Vec::new(),
+            };
         if panes.is_empty() {
             ui.centered_and_justified(|ui| {
                 if self.loading {
@@ -2589,15 +2730,125 @@ impl App {
         }
         // Lay the images out explicitly: clicks and the detail outline are measured against
         // the rectangles the images are actually drawn in, not the whole panel.
-        let (area_rect, response) = ui.allocate_exact_size(available, Sense::click());
+        let sense = if self.zoom_centre.is_some() {
+            Sense::click_and_drag()
+        } else {
+            Sense::click()
+        };
+        let (area_rect, response) = ui.allocate_exact_size(available, sense);
         let caption_h = if panes.len() > 1 { CAPTION } else { 0.0 };
-        let mut image_rects = Vec::new();
-        for (i, (texture, caption)) in panes.iter().enumerate() {
-            let left = area_rect.min.x + i as f32 * (pane.x + GAP);
-            let slot = egui::Rect::from_min_size(
-                Pos2::new(left, area_rect.min.y + caption_h),
-                Vec2::new(pane.x, pane.y - caption_h),
+        let slots: Vec<egui::Rect> = (0..panes.len())
+            .map(|i| {
+                let left = area_rect.min.x + i as f32 * (pane.x + GAP);
+                egui::Rect::from_min_size(
+                    Pos2::new(left, area_rect.min.y + caption_h),
+                    Vec2::new(pane.x, pane.y - caption_h),
+                )
+            })
+            .collect();
+        let ppp = ui.ctx().pixels_per_point();
+        let fitted = panes[0].0.size_vec2();
+        // The whole image's size on screen at 100 %, in points.
+        let full_pts = self.full_size_for(fitted).map(|px| px / ppp);
+        // Keep the view inside the image (centred where the image is smaller than it).
+        let clamp_centre = |c: [f32; 2], full: Vec2, slot: egui::Rect| -> [f32; 2] {
+            let half = [slot.width() / full.x / 2.0, slot.height() / full.y / 2.0];
+            std::array::from_fn(|k| {
+                if half[k] >= 0.5 {
+                    0.5
+                } else {
+                    c[k].clamp(half[k], 1.0 - half[k])
+                }
+            })
+        };
+
+        if let (Some(centre), Some(full)) = (self.zoom_centre, full_pts) {
+            // ----- 100 %: one image pixel per screen pixel; drag to move. -----
+            let view_px = [
+                (slots[0].width() * ppp).ceil() as usize,
+                (slots[0].height() * ppp).ceil() as usize,
+            ];
+            if view_px != self.zoom_view_px {
+                self.zoom_view_px = view_px;
+                self.request_zoom();
+            }
+            let mut centre = clamp_centre(centre, full, slots[0]);
+            if response.dragged() {
+                let d = response.drag_delta();
+                if d != Vec2::ZERO {
+                    // Grabbing the photo: dragging right shows what lies to the left.
+                    centre = clamp_centre(
+                        [centre[0] - d.x / full.x, centre[1] - d.y / full.y],
+                        full,
+                        slots[0],
+                    );
+                    self.zoom_centre = Some(centre);
+                    self.request_zoom();
+                }
+                ui.ctx().set_cursor_icon(egui::CursorIcon::Grabbing);
+            } else if response.hovered() {
+                ui.ctx().set_cursor_icon(egui::CursorIcon::Grab);
+            }
+            self.zoom_centre = Some(centre);
+            let snap = |p: Pos2| Pos2::new((p.x * ppp).round() / ppp, (p.y * ppp).round() / ppp);
+            let whole_uv = egui::Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1.0, 1.0));
+            for ((texture, caption, is_original), slot) in panes.iter().zip(&slots) {
+                // Where the image's top-left corner falls on screen.
+                let origin =
+                    snap(slot.center() - Vec2::new(centre[0] * full.x, centre[1] * full.y));
+                let painter = ui.painter_at(*slot);
+                // The enlarged preview fills the view at once (soft while a drag waits)...
+                painter.image(
+                    texture.id(),
+                    egui::Rect::from_min_size(origin, full),
+                    whole_uv,
+                    Color32::WHITE,
+                );
+                // ...and the full-resolution crop sits on top where it has been rendered.
+                if let Some(z) = &self.zoom_crop {
+                    let tex = if *is_original {
+                        &z.original
+                    } else {
+                        &z.treated
+                    };
+                    let min = snap(origin + Vec2::new(z.area[0] * full.x, z.area[1] * full.y));
+                    painter.image(
+                        tex.id(),
+                        egui::Rect::from_min_size(min, tex.size_vec2() / ppp),
+                        whole_uv,
+                        Color32::WHITE,
+                    );
+                }
+                if let Some(caption) = caption {
+                    ui.painter().text(
+                        Pos2::new(slot.center().x, slot.min.y - 4.0),
+                        egui::Align2::CENTER_BOTTOM,
+                        *caption,
+                        egui::FontId::proportional(12.0),
+                        ui.visuals().weak_text_color(),
+                    );
+                }
+            }
+            // Badge: what this view is and how to leave it.
+            let badge = ui.painter().layout_no_wrap(
+                "100% · double-click to fit".into(),
+                egui::FontId::proportional(11.5),
+                Color32::WHITE,
             );
+            let at = slots[0].min + Vec2::new(10.0, 10.0);
+            let rect = egui::Rect::from_min_size(at, badge.size()).expand2(Vec2::new(7.0, 3.0));
+            ui.painter()
+                .rect_filled(rect, 4.0, Color32::from_black_alpha(150));
+            ui.painter().galley(at, badge, Color32::WHITE);
+            if response.double_clicked() {
+                self.zoom_centre = None;
+            }
+            return;
+        }
+
+        // ----- Fitted to the view. -----
+        let mut image_rects = Vec::new();
+        for ((texture, caption, _), slot) in panes.iter().zip(&slots) {
             let tex_size = texture.size_vec2();
             let scale = (slot.width() / tex_size.x).min(slot.height() / tex_size.y);
             let image_rect = egui::Rect::from_center_size(slot.center(), tex_size * scale);
@@ -2612,6 +2863,30 @@ impl App {
                 );
             }
             image_rects.push(image_rect);
+        }
+        // Double-click: 100 %, keeping the point under the pointer where it is.
+        if response.double_clicked()
+            && let Some(pos) = response.interact_pointer_pos()
+            && let Some((k, image_rect)) = image_rects
+                .iter()
+                .enumerate()
+                .find(|(_, r)| r.contains(pos))
+            && let Some(full) = full_pts
+        {
+            let f = [
+                (pos.x - image_rect.min.x) / image_rect.width(),
+                (pos.y - image_rect.min.y) / image_rect.height(),
+            ];
+            let offset = pos - slots[k].center();
+            self.zoom_centre = Some(clamp_centre(
+                [f[0] - offset.x / full.x, f[1] - offset.y / full.y],
+                full,
+                slots[k],
+            ));
+            self.zoom_crop = None;
+            // The crop is requested next frame, once the view's pixel size is known.
+            ui.ctx().request_repaint();
+            return;
         }
         if self.detail_enabled
             && response.clicked()
@@ -2665,6 +2940,10 @@ impl eframe::App for App {
                 self.request_detail();
             }
         }
+        for scope in std::mem::take(&mut self.pending_reset_points) {
+            widgets::new_reset_point(ctx, scope);
+        }
+        widgets::set_reset_scope(ctx, reset_scope(self.process));
         self.handle_messages(ctx);
 
         if !ctx.egui_wants_keyboard_input() {

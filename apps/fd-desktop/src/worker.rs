@@ -25,20 +25,27 @@ use crate::source::Source;
 
 /// Long edge of style-gallery tiles.
 pub const TILE_EDGE: usize = 480;
-/// Pixel rectangle `(x, y, width, height)` of a detail crop of `size` pixels centred on
-/// `centre` (0–1 across the image), moved inwards where it would cross an edge.
+/// Pixel rectangle `(x, y, width, height)` of a crop of `size` (width, height) pixels
+/// centred on `centre` (0–1 across the image), moved inwards where it would cross an edge.
 pub fn detail_rect(
     w: usize,
     h: usize,
     centre: [f32; 2],
-    size: usize,
+    size: [usize; 2],
 ) -> (usize, usize, usize, usize) {
-    let (cw, ch) = (size.min(w), size.min(h));
+    let (cw, ch) = (size[0].clamp(1, w), size[1].clamp(1, h));
     let cx = (centre[0].clamp(0.0, 1.0) * w as f32).round() as usize;
     let cy = (centre[1].clamp(0.0, 1.0) * h as f32).round() as usize;
     let x = cx.saturating_sub(cw / 2).min(w - cw);
     let y = cy.saturating_sub(ch / 2).min(h - ch);
     (x, y, cw, ch)
+}
+
+/// Where a full-resolution crop is shown: the Detail window, or the main view at 100 %.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CropView {
+    Detail,
+    Main,
 }
 
 pub enum Job {
@@ -53,13 +60,15 @@ pub enum Job {
         adjust: RawAdjust,
         edge: usize,
     },
+    /// A full-resolution crop for the Detail window or the zoomed main view.
     Detail {
+        view: CropView,
         generation: u64,
         style: Style,
         adjust: RawAdjust,
         centre: [f32; 2],
-        /// Side of the crop in image pixels (smaller = more magnified on screen).
-        crop_px: usize,
+        /// Crop size in image pixels, width and height (smaller = more magnified).
+        crop_px: [usize; 2],
     },
     /// Gallery previews: each style with its index in the style list.
     Tiles {
@@ -86,12 +95,15 @@ pub enum Msg {
         millis: u128,
     },
     Detail {
+        view: CropView,
         generation: u64,
         image: egui::ColorImage,
         /// The same crop before the film, for side-by-side comparison.
         original: egui::ColorImage,
         /// The crop's area as fractions of the image: `[x0, y0, x1, y1]`.
         area: [f32; 4],
+        /// The developed image's full size in pixels.
+        full: [usize; 2],
     },
     Tile {
         generation: u64,
@@ -177,11 +189,15 @@ impl Current {
     }
 }
 
+type DetailJob = (CropView, u64, Style, RawAdjust, [f32; 2], [usize; 2]);
+
 #[derive(Default)]
 struct Pending {
     load: Option<(u64, PathBuf)>,
     preview: Option<(u64, Style, RawAdjust, usize)>,
-    detail: Option<(u64, Style, RawAdjust, [f32; 2], usize)>,
+    detail: Option<DetailJob>,
+    /// The zoomed main view's crop (renders after the Detail window's).
+    main: Option<DetailJob>,
     tiles: VecDeque<(u64, usize, Style, RawAdjust)>,
 }
 
@@ -190,6 +206,7 @@ impl Pending {
         self.load.is_none()
             && self.preview.is_none()
             && self.detail.is_none()
+            && self.main.is_none()
             && self.tiles.is_empty()
     }
 
@@ -198,6 +215,7 @@ impl Pending {
             Job::Load { generation, path } => {
                 self.load = Some((generation, path));
                 self.detail = None;
+                self.main = None;
                 self.tiles.clear();
             }
             Job::Preview {
@@ -207,12 +225,19 @@ impl Pending {
                 edge,
             } => self.preview = Some((generation, style, adjust, edge)),
             Job::Detail {
+                view,
                 generation,
                 style,
                 adjust,
                 centre,
                 crop_px,
-            } => self.detail = Some((generation, style, adjust, centre, crop_px)),
+            } => {
+                let job = Some((view, generation, style, adjust, centre, crop_px));
+                match view {
+                    CropView::Detail => self.detail = job,
+                    CropView::Main => self.main = job,
+                }
+            }
             Job::Tiles {
                 generation,
                 styles,
@@ -282,8 +307,8 @@ pub fn spawn_renderer(rx: Receiver<Job>, tx: Sender<Msg>, ctx: egui::Context) {
                     }
                 // The detail goes before the preview: it is a small crop, and while it is
                 // open it is what the user is fine-tuning against.
-                } else if let Some((generation, style, adjust, centre, crop_px)) =
-                    pending.detail.take()
+                } else if let Some((view, generation, style, adjust, centre, crop_px)) =
+                    pending.detail.take().or_else(|| pending.main.take())
                 {
                     let Some(cur) = current.as_mut() else {
                         continue;
@@ -305,10 +330,12 @@ pub fn spawn_renderer(rx: Receiver<Job>, tx: Sender<Msg>, ctx: egui::Context) {
                     let origin = [x as u32, y as u32];
                     match fd_profiles::render_region(&crop, &style, crop_mm, origin, [w, h]) {
                         Ok(r) => Msg::Detail {
+                            view,
                             generation,
                             image: output_image(r),
                             original: colour_image(&crop),
                             area,
+                            full: [w, h],
                         },
                         Err(e) => Msg::RenderFailed {
                             error: e.to_string(),
@@ -539,22 +566,30 @@ mod tests {
     fn detail_rect_is_centred_and_kept_inside() {
         // Centred where there is room.
         assert_eq!(
-            detail_rect(6000, 4000, [0.5, 0.5], 512),
+            detail_rect(6000, 4000, [0.5, 0.5], [512, 512]),
             (2744, 1744, 512, 512)
         );
-        let (x, y, w, h) = detail_rect(6000, 4000, [0.3, 0.7], 1024);
+        let (x, y, w, h) = detail_rect(6000, 4000, [0.3, 0.7], [1024, 1024]);
         assert_eq!((x + w / 2, y + h / 2), (1800, 2800));
         // Moved inwards at the edges, never outside the image.
         assert_eq!(
-            detail_rect(6000, 4000, [0.0, 1.0], 512),
+            detail_rect(6000, 4000, [0.0, 1.0], [512, 512]),
             (0, 3488, 512, 512)
         );
         assert_eq!(
-            detail_rect(6000, 4000, [1.0, 0.0], 512),
+            detail_rect(6000, 4000, [1.0, 0.0], [512, 512]),
             (5488, 0, 512, 512)
         );
         // Images smaller than the crop give the whole image.
-        assert_eq!(detail_rect(300, 200, [0.9, 0.9], 512), (0, 0, 300, 200));
+        assert_eq!(
+            detail_rect(300, 200, [0.9, 0.9], [512, 512]),
+            (0, 0, 300, 200)
+        );
+        // Rectangular crops (the zoomed main view).
+        assert_eq!(
+            detail_rect(6000, 4000, [0.5, 0.5], [1600, 900]),
+            (2200, 1550, 1600, 900)
+        );
     }
 
     #[test]

@@ -296,7 +296,7 @@ pub fn film_stocks() -> Vec<FilmStock> {
             name: "Pro 400H",
             kind: Negative,
             iso: 400.0,
-            about: "Fuji's four-layer portrait negative: airy pastels, cool cyan-green cast, soft.",
+            about: "Fuji's four-layer portrait negative: airy pastels, a faint mint-green cast, soft.",
             // A fourth, cyan-sensitive layer inhibits the red layer under blue-green light.
             sensitivity: [[0.98, 0.12, -0.10], [0.06, 0.86, 0.08], [0.00, 0.09, 0.91]],
             layers: [layer(0.54, -0.02), layer(0.57, 0.0), layer(0.56, 0.0)],
@@ -313,7 +313,9 @@ pub fn film_stocks() -> Vec<FilmStock> {
             },
             halation: BACKED,
             dyes: TYPICAL_DYES,
-            look_points: [-1.5, 1.0, 1.0],
+            // The familiar lab rendering is a light green shift with warm, pastel skin, not
+            // a blue cast: −1.5 R / +1 B printed greys about 0.4 stop cyan-blue.
+            look_points: [0.0, 1.0, -0.5],
             level: il,
         },
         FilmStock {

@@ -41,7 +41,8 @@ pub struct SliderSpec<'a> {
     pub help: &'a str,
     pub min: f64,
     pub max: f64,
-    /// What double-clicking resets to.
+    /// What double-clicking resets to when there is no reset point (see
+    /// [`new_reset_point`]); the gallery size always uses it.
     pub default: f64,
     pub step: f64,
     pub decimals: usize,
@@ -106,10 +107,66 @@ impl SliderSpec<'_> {
     }
 }
 
+/// Reset points: double-clicking a slider restores the value it had at its scope's last
+/// reset point, not a fixed default. Scopes: `"image"` for the per-photo sliders (ids
+/// starting `image.`), and the current process (`set_reset_scope`) for the style's
+/// sliders, whose ids repeat between processes. The app starts a new reset point for every
+/// scope when a photo has loaded, and for the process when a style is chosen.
+const IMAGE_SCOPE: &str = "image";
+
+fn reset_generation_id(scope: &str) -> Id {
+    Id::unique(("fd-reset-generation", scope))
+}
+
+/// Start a new reset point for `scope`: each slider of that scope records its value the
+/// next time it is drawn.
+pub fn new_reset_point(ctx: &egui::Context, scope: &str) {
+    ctx.data_mut(|d| {
+        let g: &mut u64 = d.get_temp_mut_or_default(reset_generation_id(scope));
+        *g += 1;
+    });
+}
+
+/// The scope for style sliders drawn from now on (the current process).
+pub fn set_reset_scope(ctx: &egui::Context, scope: &'static str) {
+    ctx.data_mut(|d| d.insert_temp(Id::unique("fd-reset-scope"), scope));
+}
+
+/// The value this slider restores on double-click: what it was at its scope's last reset
+/// point, recorded the first time it is drawn after that point.
+fn reset_value(ui: &Ui, spec: &SliderSpec, current: f64) -> f64 {
+    if spec.id.starts_with("gallery.") {
+        return spec.default;
+    }
+    let scope: &'static str = if spec.id.starts_with("image.") {
+        IMAGE_SCOPE
+    } else {
+        ui.data(|d| d.get_temp(Id::unique("fd-reset-scope")))
+            .unwrap_or("style")
+    };
+    let generation: u64 = ui.data(|d| d.get_temp(reset_generation_id(scope)).unwrap_or(0));
+    let key = Id::unique(("fd-reset-value", scope, spec.id));
+    match ui.data(|d| d.get_temp::<(u64, f64)>(key)) {
+        Some((g, v)) if g == generation => v,
+        _ => {
+            ui.data_mut(|d| d.insert_temp(key, (generation, current)));
+            current
+        }
+    }
+}
+
+fn reset_hint(spec: &SliderSpec) -> &'static str {
+    if spec.id.starts_with("gallery.") {
+        "Double-click to reset."
+    } else {
+        "Double-click to restore the starting value."
+    }
+}
+
 /// A LightCraft-style slider row: label and value above a thin track with a hollow ring
-/// thumb. Drag the track (Shift: a tenth as fast); double-click the label or thumb to reset;
-/// click the value to type one (Return applies, Esc cancels). Returns true when `value`
-/// changed.
+/// thumb. Drag the track (Shift: a tenth as fast); double-click the label or thumb to
+/// restore the value it had when the photo was opened (or the style chosen); click the
+/// value to type one (Return applies, Esc cancels). Returns true when `value` changed.
 pub fn slider(ui: &mut Ui, spec: &SliderSpec, value: &mut f64, enabled: bool) -> bool {
     let t = Tokens::get(ui.ctx());
     let w = ui.available_width();
@@ -142,12 +199,13 @@ pub fn slider(ui: &mut Ui, spec: &SliderSpec, value: &mut f64, enabled: bool) ->
     };
     let label_resp = ui
         .interact(name_rect, id.with("label"), label_sense)
-        .on_hover_text(format!("{}\nDouble-click to reset.", spec.help));
+        .on_hover_text(format!("{}\n{}", spec.help, reset_hint(spec)));
     let value_resp = ui
         .interact(value_rect, id.with("value"), label_sense)
         .on_hover_text("Click to type a value");
 
     let before = *value;
+    let reset_to = reset_value(ui, spec, before);
     let typing_id = id.with("typing");
     let mut typing: Option<(String, bool)> = ui.data(|d| d.get_temp(typing_id));
     if enabled && typing.is_none() && value_resp.clicked() {
@@ -196,7 +254,7 @@ pub fn slider(ui: &mut Ui, spec: &SliderSpec, value: &mut f64, enabled: bool) ->
             ui.data_mut(|d| d.insert_temp(typing_id, (text, false)));
         }
     } else if enabled && (label_resp.double_clicked() || resp.double_clicked()) {
-        *value = spec.default;
+        *value = reset_to;
     } else if enabled && (resp.dragged() || resp.drag_started()) {
         if let Some(p) = resp.interact_pointer_pos() {
             let fine_id = id.with("fine");
@@ -227,7 +285,7 @@ pub fn slider(ui: &mut Ui, spec: &SliderSpec, value: &mut f64, enabled: bool) ->
     }
     if enabled && resp.hovered() && resp.hover_pos().is_some_and(on_thumb) {
         resp.clone()
-            .on_hover_text(format!("{}\nDouble-click to reset.", spec.help));
+            .on_hover_text(format!("{}\n{}", spec.help, reset_hint(spec)));
     }
 
     // Paint.

@@ -22,7 +22,7 @@ jobs:
     steps:
       # Keep LF line endings: data files and fixtures are read byte for byte.
       - run: git config --global core.autocrlf false
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Toolchain (rust-toolchain.toml)
         run: rustup show active-toolchain || rustup toolchain install
       - uses: Swatinem/rust-cache@v2
@@ -32,7 +32,7 @@ jobs:
         run: cargo test --release --workspace
       - name: Package
         run: tools/package-windows.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: film-darkroom-windows
           path: dist/*.zip

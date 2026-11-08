@@ -16,8 +16,22 @@ All notable changes to this project are recorded here. The format follows
   with their camera and exposure details carried to exports. The X-T3, X-T4, GFX 100 and
   GFX100S use colour from their measured spectral sensitivities; other Fujifilm models
   use the generic matrix and show the existing "no colour data for this camera" note.
+- **Double-click the photo for 100%**, centred where you clicked; drag to move around
+  it, double-click again to fit. The enlarged preview follows a drag at once and the
+  full-resolution render sharpens it.
 - A GitHub Actions workflow builds and tests every change on Windows and attaches the
   Windows zip to each release.
+
+### Changed
+- **Double-clicking a slider restores its starting value**: what it was when the photo
+  opened (its saved adjustments, the style as it was), or when a style was last chosen,
+  instead of a fixed default. Each photo you move to sets its own starting values.
+
+### Fixed
+- **Pro 400H printed far too blue.** Its lab look added −1.5 red / +1 blue printer
+  points, which put mid-grey about 0.4 stop towards cyan-blue and needed a much warmer
+  white balance to look right. It is now a light mint-green shift (0 / +1 / −0.5): greys
+  print a touch green and warm, as 400H's familiar rendering does.
 
 ## [0.1.0] - 2026-11-04
 

@@ -129,7 +129,7 @@ save settings or touch the network. Options (prefix `FILM_DARKROOM_SCREENSHOT_`)
 `PROCESS=mono|colour`, `FRESH=1` (default layout), `THEME=dark|light`,
 `VIEW=develop|styles`, `EDIT=1` (open all sections), `CLOSE=image,film`,
 `DETAIL=x,y,zoom`, `GRAIN=amount,size,roughness`, `THEN_PUSH=stops`,
-`COMPARE=side|original`, `SHOW=bitmaps,jpegs`, `STYLEMENU=index`, `ABOUT=1`, `EXPORT=1`,
+`COMPARE=side|original`, `ZOOM=x,y` (main view at 100 %), `SHOW=bitmaps,jpegs`, `STYLEMENU=index`, `ABOUT=1`, `EXPORT=1`,
 `UPDATE=version` + `UPDATE_DIALOG=1` (fake update), `WAIT=seconds`, and
 `CLICKS=t:x,y;t:x,y>x2,y2` (scripted clicks and drags through egui input). Run each shot
 with a time limit (`perl -e 'alarm 90; exec @ARGV' …`; macOS has no `timeout`) and retry:
