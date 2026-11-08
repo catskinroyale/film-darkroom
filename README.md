@@ -5,7 +5,7 @@
 # Film Darkroom
 
 A film emulation engine in Rust for colour and black and white, with a desktop app and a
-command-line tool. It turns digital raw files (NEF, DNG, ARW) into film prints by modelling
+command-line tool. It turns digital raw files (NEF, DNG, ARW, RAF) into film prints by modelling
 the film rather than grading the image:
 
 - **Black and white:** film, developer and processing as separate components that
@@ -73,7 +73,7 @@ black-and-white process with screenshots, read the [article](docs/article/articl
 |---|---|
 | `crates/fd-core` | Planes, scenes, film geometry, monotone curves, deterministic noise, blur, film compression |
 | `crates/fd-io` | Image loading and export (TIFF, JPEG, PNG; greyscale and colour, with EXIF) |
-| `crates/fd-raw` | Camera raw input (NEF, DNG, ARW) via LightCraft's `lightcraft-raw`; exposure, white balance, highlights, defringe |
+| `crates/fd-raw` | Camera raw input (NEF, DNG, ARW, Fujifilm RAF incl. X-Trans) via LightCraft's `lightcraft-raw`; exposure, white balance, highlights, defringe |
 | `crates/mono-film`, `crates/mono-developer` | Black-and-white film stocks; developer behaviour and processing conditions |
 | `crates/mono-negative` | Negative simulation: exposure, development, adjacency, grain; development-time table and calibrations |
 | `crates/mono-darkroom` | Printing on measured paper grade families |

@@ -12,6 +12,10 @@ All notable changes to this project are recorded here. The format follows
   Home, right-click offers **Show in Explorer**, shortcuts use **Ctrl** (Ctrl+E exports),
   and the exe and window carry the app icon. Styles are kept in
   `%APPDATA%\film-darkroom`. The build is not code-signed, so SmartScreen may ask once.
+- **Fujifilm RAF raw files**, from X-Trans and Bayer sensors (lossless and compressed),
+  with their camera and exposure details carried to exports. The X-T3, X-T4, GFX 100 and
+  GFX100S use colour from their measured spectral sensitivities; other Fujifilm models
+  use the generic matrix and show the existing "no colour data for this camera" note.
 - A GitHub Actions workflow builds and tests every change on Windows and attaches the
   Windows zip to each release.
 

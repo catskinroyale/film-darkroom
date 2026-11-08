@@ -1,7 +1,8 @@
 //! EXIF metadata carried from the source image to exports.
 //!
 //! Read with `kamadak-exif` from JPEG, PNG, TIFF and TIFF-based raw files (NEF, DNG,
-//! ARW). On export, the photographic record is kept (camera, lens, exposure, dates,
+//! ARW). Fujifilm RAF is not TIFF-based: its EXIF is read from the full-size JPEG the
+//! camera embeds in the file. On export, the photographic record is kept (camera, lens, exposure, dates,
 //! GPS, artist, copyright) and everything that describes the source file's own pixels
 //! is dropped or rewritten:
 //!
@@ -63,9 +64,16 @@ const DROPPED_EXIF_TAGS: [Tag; 9] = [
 
 /// Read EXIF from an image file. `None` when the file has none or it can't be parsed.
 pub fn read_exif(path: &Path) -> Option<Exif> {
-    let file = std::fs::File::open(path).ok()?;
-    let mut reader = std::io::BufReader::new(file);
-    let parsed = exif::Reader::new().read_from_container(&mut reader).ok()?;
+    let parsed = match raf_embedded_jpeg(path) {
+        Some(jpeg) => exif::Reader::new()
+            .read_from_container(&mut std::io::Cursor::new(jpeg))
+            .ok()?,
+        None => {
+            let file = std::fs::File::open(path).ok()?;
+            let mut reader = std::io::BufReader::new(file);
+            exif::Reader::new().read_from_container(&mut reader).ok()?
+        }
+    };
     let fields: Vec<Field> = parsed
         .fields()
         .filter(|f| f.ifd_num == In::PRIMARY)
@@ -82,6 +90,29 @@ pub fn read_exif(path: &Path) -> Option<Exif> {
         .cloned()
         .collect();
     (!fields.is_empty()).then_some(Exif { fields })
+}
+
+/// A Fujifilm RAF file's embedded JPEG, which carries the camera's EXIF. `None` for any
+/// other file. The RAF header gives the JPEG's offset and length (big-endian, at bytes
+/// 84 and 88); only those bytes are read.
+fn raf_embedded_jpeg(path: &Path) -> Option<Vec<u8>> {
+    use std::io::{Read, Seek, SeekFrom};
+    let mut file = std::fs::File::open(path).ok()?;
+    let mut header = [0u8; 92];
+    file.read_exact(&mut header).ok()?;
+    if !header.starts_with(b"FUJIFILMCCD-RAW") {
+        return None;
+    }
+    let be = |at: usize| u32::from_be_bytes(header[at..at + 4].try_into().unwrap());
+    let (offset, length) = (be(84) as u64, be(88) as u64);
+    let size = file.metadata().ok()?.len();
+    if length == 0 || offset.checked_add(length)? > size {
+        return None;
+    }
+    file.seek(SeekFrom::Start(offset)).ok()?;
+    let mut jpeg = vec![0u8; length as usize];
+    file.read_exact(&mut jpeg).ok()?;
+    Some(jpeg)
 }
 
 /// A UserComment with nothing but spaces or NULs after its 8-byte character code.
@@ -328,5 +359,42 @@ mod tests {
         let parsed = parse(m.exif_block(10, 10).unwrap());
         assert!(parsed.get_field(Tag::Software, In::PRIMARY).is_some());
         assert!(parsed.get_field(Tag::Make, In::PRIMARY).is_none());
+    }
+
+    /// A minimal RAF: the 92-byte header pointing at an embedded JPEG whose APP1 segment
+    /// holds the camera's EXIF, then filler standing in for the raw data.
+    #[test]
+    fn reads_exif_from_a_raf_files_embedded_jpeg() {
+        let mut tiff = std::io::Cursor::new(Vec::new());
+        let mut writer = Writer::new();
+        let make = field(Tag::Make, ascii("FUJIFILM"));
+        let model = field(Tag::Model, ascii("X-T5"));
+        writer.push_field(&make);
+        writer.push_field(&model);
+        writer.write(&mut tiff, false).unwrap();
+        let tiff = tiff.into_inner();
+        let mut jpeg = vec![0xFF, 0xD8, 0xFF, 0xE1];
+        jpeg.extend_from_slice(&((tiff.len() + 8) as u16).to_be_bytes());
+        jpeg.extend_from_slice(b"Exif\0\0");
+        jpeg.extend_from_slice(&tiff);
+        jpeg.extend_from_slice(&[0xFF, 0xD9]);
+
+        let mut raf = b"FUJIFILMCCD-RAW 0201FF383501".to_vec();
+        raf.resize(84, 0);
+        let offset = 148u32;
+        raf.extend_from_slice(&offset.to_be_bytes());
+        raf.extend_from_slice(&(jpeg.len() as u32).to_be_bytes());
+        raf.resize(offset as usize, 0);
+        raf.extend_from_slice(&jpeg);
+        raf.extend_from_slice(&[0x55; 4096]);
+
+        let dir = std::env::temp_dir().join(format!("fd-io-raf-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("DSCF0001.RAF");
+        std::fs::write(&path, &raf).unwrap();
+        let exif = read_exif(&path).expect("EXIF from the embedded JPEG");
+        std::fs::remove_dir_all(&dir).unwrap();
+        let model = exif.fields.iter().find(|f| f.tag == Tag::Model).unwrap();
+        assert_eq!(model.display_value().to_string(), "\"X-T5\"");
     }
 }

@@ -26,8 +26,9 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 /// Raw file extensions the app offers (the decoder reads more; these are the
-/// formats of the cameras this project targets: Nikon, Leica DNG, Sony).
-pub const RAW_EXTENSIONS: [&str; 3] = ["nef", "dng", "arw"];
+/// formats of the cameras this project targets: Nikon, Leica DNG, Sony, Fujifilm).
+/// Fujifilm RAF covers Bayer and X-Trans sensors (lightcraft-raw demosaics both).
+pub const RAW_EXTENSIONS: [&str; 4] = ["nef", "dng", "arw", "raf"];
 
 pub fn is_raw(path: &Path) -> bool {
     path.extension()

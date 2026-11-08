@@ -1860,7 +1860,7 @@ impl App {
                     false,
                     egui::Button::selectable(true, egui::RichText::new("RAW").small()),
                 )
-                .on_disabled_hover_text("Camera raw files (NEF, DNG, ARW) are always listed");
+                .on_disabled_hover_text("Camera raw files (NEF, DNG, ARW, RAF) are always listed");
             });
         });
 

@@ -172,7 +172,8 @@ pick a photo from the **Images** strip under the photo.
   frame number ("Reykjav…042.NEF"). Hover a photo to see its full name.
 
 **Raw files first.** Film Darkroom is built for camera raw files: Nikon NEF, DNG
-(including Leica) and Sony ARW. They're always listed. JPEG, TIFF and PNG files are hidden
+(including Leica), Sony ARW and Fujifilm RAF (X-Trans and Bayer sensors). They're always
+listed. JPEG, TIFF and PNG files are hidden
 unless you turn on **TIFF/PNG** or **JPEG** in the strip's header. The count tells you how
 many files are hidden.
 

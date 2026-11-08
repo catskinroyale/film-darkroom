@@ -21,7 +21,7 @@ pub struct Entry {
 /// What a listed image is, for the image strip's file-type filter.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Kind {
-    /// Camera raw (NEF, DNG, ARW): what the app is for, always listed.
+    /// Camera raw (NEF, DNG, ARW, RAF): what the app is for, always listed.
     Raw,
     /// Lossless bitmaps (TIFF, PNG), e.g. scans or edited masters.
     Bitmap,
