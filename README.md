@@ -20,7 +20,7 @@ unreleased); it reads their styles and per-photo adjustments, and never changes 
 
 | Colour | Black and white |
 |---|---|
-| ![Film Darkroom in colour: a raw photo of an arched stone doorway side by side, the original next to the print rendered as Portra 400 scanned, with the folder tree, the column of colour style previews, the image strip and the Develop panel showing the Image and Film sections](docs/images/screenshot-colour-0.1.0.jpg) | ![Film Darkroom in black and white: the same doorway side by side, the original next to the print rendered as Tri-X developed in D-76, with the column of black-and-white style previews and the Develop panel showing the Image, Film and Development sections](docs/images/screenshot-bw-0.1.0.jpg) |
+| ![Film Darkroom in colour: a raw photo of an arched stone doorway side by side, the original next to the print rendered as Portra 400 scanned, with the folder tree, the column of colour style previews, the image strip and the Develop panel showing the Image and Film sections](docs/images/screenshot-colour-0.2.0.jpg) | ![Film Darkroom in black and white: the same doorway side by side, the original next to the print rendered as Tri-X developed in D-76, with the column of black-and-white style previews and the Develop panel showing the Image, Film and Development sections](docs/images/screenshot-bw-0.2.0.jpg) |
 
 > **Status:** early prototype.
 >
